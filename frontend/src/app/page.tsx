@@ -9,7 +9,7 @@ export default function Home() {
     <div className="flex min-h-screen items-center justify-center bg-gray-100">
       <div className="w-full max-w-sm bg-white rounded-2xl shadow-lg p-8">
         <h1 className="text-2xl font-bold text-center text-gray-800 mb-6">
-          ようこそ
+          mii fitへ ようこそ。
         </h1>
 
         <div className="flex flex-col space-y-4">
