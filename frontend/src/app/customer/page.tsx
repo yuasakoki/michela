@@ -1,5 +1,6 @@
 "use client";
 import React, { useState } from "react";
+import Link from "next/link";
 
 export default function CustomerRegist() {
   const [name, setName] = useState("");
@@ -9,20 +10,57 @@ export default function CustomerRegist() {
   const [favoriteFood, setFavoriteFood] = useState("");
   const [completionDate, setCompletionDate] = useState("");
 
-  const handleSubmit = () => {
-    alert("登録が完了しました！");
+  const handleSubmit = async () => {
+    try {
+      const response = await fetch("http://127.0.0.1:5000/register_customer", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          name,
+          age: Number.parseInt(age),
+          height: Number.parseFloat(height),
+          weight: Number.parseFloat(weight),
+          favorite_food: favoriteFood,
+          completion_date: completionDate,
+        }),
+      });
+
+      if (response.ok) {
+        const result = await response.json();
+        alert(`登録が完了しました！ ID: ${result.id}`);
+        // フォームをリセット
+        setName("");
+        setAge("");
+        setHeight("");
+        setWeight("");
+        setFavoriteFood("");
+        setCompletionDate("");
+      } else {
+        const error = await response.json();
+        alert(`登録に失敗しました: ${error.error}`);
+      }
+    } catch (error) {
+      alert("ネットワークエラーが発生しました。");
+      console.error("Error:", error);
+    }
   };
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-green-100">
-      <div className="text-center">
-        <h1 className="text-3xl font-bold text-green-800 mb-6">顧客登録</h1>
+    <div className="flex min-h-screen items-center justify-center bg-gray-100">
+      <div className="bg-white shadow-lg rounded-lg p-8 max-w-md w-full">
+        <h1 className="text-3xl font-bold text-gray-800 mb-6 text-center">顧客登録</h1>
         <form className="space-y-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700">
+            <label
+              htmlFor="name"
+              className="block text-sm font-medium text-gray-700"
+            >
               氏名
             </label>
             <input
+              id="name"
               type="text"
               value={name}
               onChange={(e) => setName(e.target.value)}
@@ -30,10 +68,14 @@ export default function CustomerRegist() {
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700">
+            <label
+              htmlFor="age"
+              className="block text-sm font-medium text-gray-700"
+            >
               年齢
             </label>
             <input
+              id="age"
               type="number"
               value={age}
               onChange={(e) => setAge(e.target.value)}
@@ -41,10 +83,14 @@ export default function CustomerRegist() {
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700">
+            <label
+              htmlFor="height"
+              className="block text-sm font-medium text-gray-700"
+            >
               身長 (cm)
             </label>
             <input
+              id="height"
               type="number"
               value={height}
               onChange={(e) => setHeight(e.target.value)}
@@ -52,10 +98,14 @@ export default function CustomerRegist() {
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700">
+            <label
+              htmlFor="weight"
+              className="block text-sm font-medium text-gray-700"
+            >
               体重 (kg)
             </label>
             <input
+              id="weight"
               type="number"
               value={weight}
               onChange={(e) => setWeight(e.target.value)}
@@ -63,10 +113,14 @@ export default function CustomerRegist() {
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700">
+            <label
+              htmlFor="favoriteFood"
+              className="block text-sm font-medium text-gray-700"
+            >
               好きな食べ物
             </label>
             <input
+              id="favoriteFood"
               type="text"
               value={favoriteFood}
               onChange={(e) => setFavoriteFood(e.target.value)}
@@ -74,10 +128,14 @@ export default function CustomerRegist() {
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700">
+            <label
+              htmlFor="completionDate"
+              className="block text-sm font-medium text-gray-700"
+            >
               完了予定
             </label>
             <input
+              id="completionDate"
               type="date"
               value={completionDate}
               onChange={(e) => setCompletionDate(e.target.value)}
@@ -91,6 +149,13 @@ export default function CustomerRegist() {
           >
             登録
           </button>
+          <div className="mt-4">
+            <Link href="/dashboard">
+              <button className="px-4 py-2 bg-gray-500 text-white rounded hover:bg-gray-600">
+                戻る
+              </button>
+            </Link>
+          </div>
         </form>
       </div>
     </div>
