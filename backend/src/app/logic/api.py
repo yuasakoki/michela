@@ -2,8 +2,12 @@ from flask import Flask, request, jsonify
 from flask_cors import CORS
 import firebase_admin
 from firebase_admin import credentials, firestore
+import os
+import json
 
-cred = credentials.Certificate(r'..\..\..\keys\michela-481217-ca8c2322cbd0.json')
+# 環境変数からFirebaseキーを読み込み
+cred_dict = json.loads(os.environ['GOOGLE_CREDENTIALS'])
+cred = credentials.Certificate(cred_dict)
 firebase_admin.initialize_app(cred)
 print("Firebase initialized")
 
