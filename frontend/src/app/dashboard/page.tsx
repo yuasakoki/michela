@@ -22,7 +22,9 @@ export default function Dashboard() {
   useEffect(() => {
     const fetchCustomers = async () => {
       try {
-        const response = await fetch("http://127.0.0.1:5000/get_customers");
+        const response = await fetch(
+          "https://michela.onrender.com/get_customers"
+        );
         if (response.ok) {
           const data = await response.json();
           setCustomers(data);

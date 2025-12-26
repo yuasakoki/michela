@@ -13,20 +13,23 @@ export default function CustomerRegist() {
 
   const handleSubmit = async () => {
     try {
-      const response = await fetch("http://127.0.0.1:5000/register_customer", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          name,
-          age: Number.parseInt(age),
-          height: Number.parseFloat(height),
-          weight: Number.parseFloat(weight),
-          favorite_food: favoriteFood,
-          completion_date: completionDate,
-        }),
-      });
+      const response = await fetch(
+        "https://michela.onrender.com/register_customer",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            name,
+            age: Number.parseInt(age),
+            height: Number.parseFloat(height),
+            weight: Number.parseFloat(weight),
+            favorite_food: favoriteFood,
+            completion_date: completionDate,
+          }),
+        }
+      );
 
       if (response.ok) {
         const result = await response.json();

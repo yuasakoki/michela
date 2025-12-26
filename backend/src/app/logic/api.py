@@ -8,13 +8,19 @@ import json
 # 環境変数からFirebaseキーを読み込み
 cred_dict = json.loads(os.environ['GOOGLE_CREDENTIALS'])
 cred = credentials.Certificate(cred_dict)
-firebase_admin.initialize_app(cred)
-print("Firebase initialized")
+
+if not firebase_admin._apps:
+    firebase_admin.initialize_app(cred)
+    print("Firebase initialized")
+
 
 db = firestore.client()
 
 app = Flask(__name__)
-CORS(app)
+CORS(app, origins=[
+    "http://localhost:3000",
+    "https://*.vercel.app"
+])
 
 @app.route('/register_customer', methods=['POST'])
 def register_customer():

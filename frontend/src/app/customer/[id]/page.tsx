@@ -27,7 +27,7 @@ export default function CustomerDetail() {
     const fetchCustomer = async () => {
       try {
         const response = await fetch(
-          `http://127.0.0.1:5000/get_customer/${id}`
+          `https://michela.onrender.com/get_customer/${id}`
         );
         if (response.ok) {
           const data = await response.json();
@@ -58,7 +58,7 @@ export default function CustomerDetail() {
     if (!editedCustomer) return;
     try {
       const response = await fetch(
-        `http://127.0.0.1:5000/update_customer/${id}`,
+        `https://michela.onrender.com/update_customer/${id}`,
         {
           method: "PUT",
           headers: { "Content-Type": "application/json" },
