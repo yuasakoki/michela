@@ -1,6 +1,7 @@
 "use client";
 import React, { useState } from "react";
 import Link from "next/link";
+import Image from "next/image";
 
 export default function CustomerRegist() {
   const [name, setName] = useState("");
@@ -50,7 +51,12 @@ export default function CustomerRegist() {
   return (
     <div className="flex min-h-screen items-center justify-center bg-gray-100">
       <div className="bg-white shadow-lg rounded-lg p-8 max-w-md w-full">
-        <h1 className="text-3xl font-bold text-gray-800 mb-6 text-center">顧客登録</h1>
+        <div className="flex justify-center mb-4">
+          <Image src="/vercel.svg" alt="logo" width={150} height={150} />
+        </div>
+        <h1 className="text-3xl font-bold text-gray-800 mb-6 text-center">
+          顧客登録
+        </h1>
         <form className="space-y-4">
           <div>
             <label

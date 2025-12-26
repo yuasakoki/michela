@@ -8,8 +8,11 @@ export default function Home() {
   return (
     <div className="flex min-h-screen items-center justify-center bg-gray-100">
       <div className="w-full max-w-sm bg-white rounded-2xl shadow-lg p-8">
+        <div className="flex justify-center mb-4">
+          <Image src="/vercel.svg" alt="logo" width={150} height={150} />
+        </div>
         <h1 className="text-2xl font-bold text-center text-gray-800 mb-6">
-          mii fitへ ようこそ。
+          Mii Fit
         </h1>
 
         <div className="flex flex-col space-y-4">

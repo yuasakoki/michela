@@ -58,6 +58,18 @@ def get_customer(id):
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
+@app.route('/update_customer/<id>', methods=['PUT'])
+def update_customer(id):
+    data = request.json
+    if not data:
+        return jsonify({"error": "No JSON received"}), 400
+    try:
+        doc_ref = db.collection('customer').document(id)
+        doc_ref.update(data)
+        return jsonify({"message": "ok"}), 200
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
 
 if __name__ == "__main__":
     app.run(debug=True, port=5000)

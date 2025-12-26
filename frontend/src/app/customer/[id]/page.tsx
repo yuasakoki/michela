@@ -2,6 +2,7 @@
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
+import Image from "next/image";
 
 interface Customer {
   id: string;
@@ -19,6 +20,8 @@ export default function CustomerDetail() {
   const [customer, setCustomer] = useState<Customer | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [isEditing, setIsEditing] = useState(false);
+  const [editedCustomer, setEditedCustomer] = useState<Customer | null>(null);
 
   useEffect(() => {
     const fetchCustomer = async () => {
@@ -44,6 +47,41 @@ export default function CustomerDetail() {
       fetchCustomer();
     }
   }, [id]);
+
+  useEffect(() => {
+    if (customer) {
+      setEditedCustomer(customer);
+    }
+  }, [customer]);
+
+  const handleSave = async () => {
+    if (!editedCustomer) return;
+    try {
+      const response = await fetch(
+        `http://127.0.0.1:5000/update_customer/${id}`,
+        {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            name: editedCustomer.name,
+            age: editedCustomer.age,
+            height: editedCustomer.height,
+            weight: editedCustomer.weight,
+            favorite_food: editedCustomer.favorite_food,
+            completion_date: editedCustomer.completion_date,
+          }),
+        }
+      );
+      if (response.ok) {
+        setCustomer(editedCustomer);
+        setIsEditing(false);
+      } else {
+        alert("更新に失敗しました。");
+      }
+    } catch (err) {
+      alert("ネットワークエラー");
+    }
+  };
 
   if (loading) {
     return (
@@ -77,46 +115,162 @@ export default function CustomerDetail() {
   return (
     <div className="min-h-screen bg-gray-100 p-8">
       <div className="max-w-2xl mx-auto bg-white shadow-lg rounded-lg p-8">
+        <div className="flex justify-center mb-4">
+          <Image src="/vercel.svg" alt="logo" width={150} height={150} />
+        </div>
         <h1 className="text-3xl font-bold text-gray-800 mb-6">顧客詳細</h1>
+        <div className="mb-6">
+          {!isEditing && (
+            <button
+              onClick={() => setIsEditing(true)}
+              className="px-6 py-3 bg-blue-600 text-white rounded-lg shadow-md hover:bg-blue-700 transition duration-300 mr-4"
+            >
+              編集
+            </button>
+          )}
+          {isEditing && (
+            <button
+              onClick={() => {
+                setIsEditing(false);
+                setEditedCustomer(customer);
+              }}
+              className="px-6 py-3 bg-gray-600 text-white rounded-lg shadow-md hover:bg-gray-700"
+            >
+              キャンセル
+            </button>
+          )}
+        </div>
         <div className="space-y-4">
           <div>
             <label className="block text-sm font-medium text-gray-700">
               氏名
             </label>
-            <p className="mt-1 text-lg">{customer.name}</p>
+            {isEditing ? (
+              <input
+                type="text"
+                value={editedCustomer?.name || ""}
+                onChange={(e) =>
+                  setEditedCustomer((prev) =>
+                    prev ? { ...prev, name: e.target.value } : null
+                  )
+                }
+                className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2"
+              />
+            ) : (
+              <p className="mt-1 text-lg">{customer.name}</p>
+            )}
           </div>
           <div>
             <label className="block text-sm font-medium text-gray-700">
               年齢
             </label>
-            <p className="mt-1 text-lg">{customer.age} 歳</p>
+            {isEditing ? (
+              <input
+                type="number"
+                value={editedCustomer?.age || 0}
+                onChange={(e) =>
+                  setEditedCustomer((prev) =>
+                    prev ? { ...prev, age: parseInt(e.target.value) } : null
+                  )
+                }
+                className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2"
+              />
+            ) : (
+              <p className="mt-1 text-lg">{customer.age} 歳</p>
+            )}
           </div>
           <div>
             <label className="block text-sm font-medium text-gray-700">
               身長
             </label>
-            <p className="mt-1 text-lg">{customer.height} cm</p>
+            {isEditing ? (
+              <input
+                type="number"
+                step="0.1"
+                value={editedCustomer?.height || 0}
+                onChange={(e) =>
+                  setEditedCustomer((prev) =>
+                    prev
+                      ? { ...prev, height: parseFloat(e.target.value) }
+                      : null
+                  )
+                }
+                className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2"
+              />
+            ) : (
+              <p className="mt-1 text-lg">{customer.height} cm</p>
+            )}
           </div>
           <div>
             <label className="block text-sm font-medium text-gray-700">
               体重
             </label>
-            <p className="mt-1 text-lg">{customer.weight} kg</p>
+            {isEditing ? (
+              <input
+                type="number"
+                step="0.1"
+                value={editedCustomer?.weight || 0}
+                onChange={(e) =>
+                  setEditedCustomer((prev) =>
+                    prev
+                      ? { ...prev, weight: parseFloat(e.target.value) }
+                      : null
+                  )
+                }
+                className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2"
+              />
+            ) : (
+              <p className="mt-1 text-lg">{customer.weight} kg</p>
+            )}
           </div>
           <div>
             <label className="block text-sm font-medium text-gray-700">
               好きな食べ物
             </label>
-            <p className="mt-1 text-lg">{customer.favorite_food}</p>
+            {isEditing ? (
+              <input
+                type="text"
+                value={editedCustomer?.favorite_food || ""}
+                onChange={(e) =>
+                  setEditedCustomer((prev) =>
+                    prev ? { ...prev, favorite_food: e.target.value } : null
+                  )
+                }
+                className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2"
+              />
+            ) : (
+              <p className="mt-1 text-lg">{customer.favorite_food}</p>
+            )}
           </div>
           <div>
             <label className="block text-sm font-medium text-gray-700">
               完了予定
             </label>
-            <p className="mt-1 text-lg">{customer.completion_date}</p>
+            {isEditing ? (
+              <input
+                type="text"
+                value={editedCustomer?.completion_date || ""}
+                onChange={(e) =>
+                  setEditedCustomer((prev) =>
+                    prev ? { ...prev, completion_date: e.target.value } : null
+                  )
+                }
+                className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2"
+              />
+            ) : (
+              <p className="mt-1 text-lg">{customer.completion_date}</p>
+            )}
           </div>
         </div>
         <div className="mt-8">
+          {isEditing && (
+            <button
+              onClick={handleSave}
+              className="px-6 py-3 bg-green-600 text-white rounded-lg shadow-md hover:bg-green-700 transition duration-300 mr-4"
+            >
+              保存
+            </button>
+          )}
           <Link href="/dashboard">
             <button className="px-6 py-3 bg-gray-600 text-white rounded-lg shadow-md hover:bg-gray-700 transition duration-300">
               戻る

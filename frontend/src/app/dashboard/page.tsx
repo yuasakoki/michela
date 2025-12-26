@@ -1,6 +1,7 @@
 "use client";
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
+import Image from "next/image";
 
 interface Customer {
   id: string;
@@ -16,6 +17,7 @@ export default function Dashboard() {
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [sortOption, setSortOption] = useState<string>("");
 
   useEffect(() => {
     const fetchCustomers = async () => {
@@ -37,6 +39,28 @@ export default function Dashboard() {
 
     fetchCustomers();
   }, []);
+
+  const sortedCustomers = React.useMemo(() => {
+    const sorted = [...customers];
+    if (sortOption === "name-asc") {
+      sorted.sort((a, b) => a.name.localeCompare(b.name));
+    } else if (sortOption === "name-desc") {
+      sorted.sort((a, b) => b.name.localeCompare(a.name));
+    } else if (sortOption === "date-asc") {
+      sorted.sort(
+        (a, b) =>
+          new Date(a.completion_date).getTime() -
+          new Date(b.completion_date).getTime()
+      );
+    } else if (sortOption === "date-desc") {
+      sorted.sort(
+        (a, b) =>
+          new Date(b.completion_date).getTime() -
+          new Date(a.completion_date).getTime()
+      );
+    }
+    return sorted;
+  }, [customers, sortOption]);
 
   if (loading) {
     return (
@@ -61,10 +85,13 @@ export default function Dashboard() {
   return (
     <div className="min-h-screen bg-gray-100 p-8">
       <div className="max-w-6xl mx-auto">
-        <h1 className="text-3xl font-bold text-gray-800 mb-6 text-center">
-          ダッシュボードへようこそ！
-        </h1>
-        <div className="text-center mb-6">
+        <div className="flex justify-center mb-6">
+          <Image src="/vercel.svg" alt="logo" width={150} height={150} />
+        </div>
+        {/* <h1 className="text-3xl font-bold text-gray-800 mb-6 text-center">
+          メインメニュー
+        </h1> */}
+        <div className="text-right mb-6">
           <Link href="/customer">
             <button className="px-6 py-3 bg-blue-600 text-white rounded-lg shadow-md hover:bg-blue-700 transition duration-300">
               顧客登録
@@ -72,6 +99,26 @@ export default function Dashboard() {
           </Link>
         </div>
         <div className="bg-white shadow-lg rounded-lg overflow-hidden">
+          <div className="p-4 bg-gray-50 border-b">
+            <label
+              htmlFor="sort"
+              className="mr-2 text-sm font-medium text-gray-700"
+            >
+              ソート:
+            </label>
+            <select
+              id="sort"
+              value={sortOption}
+              onChange={(e) => setSortOption(e.target.value)}
+              className="border border-gray-300 rounded px-3 py-1"
+            >
+              <option value="">選択してください</option>
+              <option value="name-asc">氏名昇順</option>
+              <option value="name-desc">氏名降順</option>
+              <option value="date-asc">完了予定日昇順</option>
+              <option value="date-desc">完了予定日降順</option>
+            </select>
+          </div>
           <table className="min-w-full table-auto">
             <thead className="bg-gray-200">
               <tr>
@@ -96,7 +143,7 @@ export default function Dashboard() {
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
-              {customers.map((customer) => (
+              {sortedCustomers.map((customer) => (
                 <tr key={customer.id} className="hover:bg-gray-50">
                   <td className="px-6 py-4 whitespace-nowrap">
                     <Link
