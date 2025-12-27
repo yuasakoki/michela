@@ -2,6 +2,7 @@
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import Image from "next/image";
+import { useAuth } from "@/hooks/useAuth";
 
 interface Customer {
   id: string;
@@ -14,6 +15,8 @@ interface Customer {
 }
 
 export default function Dashboard() {
+  useAuth(); // 認証チェック
+  
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);

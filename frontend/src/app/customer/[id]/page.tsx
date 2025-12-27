@@ -3,6 +3,7 @@ import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import Image from "next/image";
+import { useAuth } from "@/hooks/useAuth";
 
 interface Customer {
   id: string;
@@ -15,6 +16,8 @@ interface Customer {
 }
 
 export default function CustomerDetail() {
+  useAuth(); // 認証チェック
+  
   const params = useParams();
   const id = params.id as string;
   const [customer, setCustomer] = useState<Customer | null>(null);
