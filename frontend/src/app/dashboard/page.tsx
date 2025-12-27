@@ -16,7 +16,7 @@ interface Customer {
 
 export default function Dashboard() {
   useAuth(); // 認証チェック
-  
+
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);

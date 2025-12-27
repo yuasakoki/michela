@@ -8,13 +8,13 @@ import { isAuthenticated } from "@/services/authService";
  * 保護されたページで使用し、未ログインユーザーをログイン画面にリダイレクト
  */
 export const useAuth = () => {
-  const router = useRouter();
+    const router = useRouter();
 
-  useEffect(() => {
-    if (!isAuthenticated()) {
-      router.push("/");
-    }
-  }, [router]);
+    useEffect(() => {
+        if (!isAuthenticated()) {
+            router.push("/");
+        }
+    }, [router]);
 
-  return { isAuthenticated: isAuthenticated() };
+    return { isAuthenticated: isAuthenticated() };
 };

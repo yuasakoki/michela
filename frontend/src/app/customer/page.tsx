@@ -6,7 +6,7 @@ import { useAuth } from "@/hooks/useAuth";
 
 export default function CustomerRegist() {
   useAuth(); // 認証チェック
-  
+
   const [name, setName] = useState("");
   const [age, setAge] = useState("");
   const [height, setHeight] = useState("");

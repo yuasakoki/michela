@@ -17,7 +17,7 @@ interface Customer {
 
 export default function CustomerDetail() {
   useAuth(); // 認証チェック
-  
+
   const params = useParams();
   const id = params.id as string;
   const [customer, setCustomer] = useState<Customer | null>(null);
