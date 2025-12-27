@@ -15,6 +15,14 @@ interface Customer {
   completion_date: string;
 }
 
+interface WeightHistory {
+  id: string;
+  customer_id: string;
+  weight: number;
+  recorded_at: string;
+  note: string;
+}
+
 export default function CustomerDetail() {
   useAuth(); // 認証チェック
 
@@ -25,6 +33,7 @@ export default function CustomerDetail() {
   const [error, setError] = useState<string | null>(null);
   const [isEditing, setIsEditing] = useState(false);
   const [editedCustomer, setEditedCustomer] = useState<Customer | null>(null);
+  const [weightHistory, setWeightHistory] = useState<WeightHistory[]>([]);
 
   useEffect(() => {
     const fetchCustomer = async () => {
@@ -46,8 +55,23 @@ export default function CustomerDetail() {
       }
     };
 
+    const fetchWeightHistory = async () => {
+      try {
+        const response = await fetch(
+          `https://michela.onrender.com/get_weight_history/${id}?limit=5`
+        );
+        if (response.ok) {
+          const data = await response.json();
+          setWeightHistory(data);
+        }
+      } catch (err) {
+        console.error("Error fetching weight history:", err);
+      }
+    };
+
     if (id) {
       fetchCustomer();
+      fetchWeightHistory();
     }
   }, [id]);
 
@@ -78,6 +102,15 @@ export default function CustomerDetail() {
       if (response.ok) {
         setCustomer(editedCustomer);
         setIsEditing(false);
+
+        // 体重履歴を再取得
+        const historyResponse = await fetch(
+          `https://michela.onrender.com/get_weight_history/${id}?limit=5`
+        );
+        if (historyResponse.ok) {
+          const historyData = await historyResponse.json();
+          setWeightHistory(historyData);
+        }
       } else {
         alert("更新に失敗しました。");
       }
@@ -209,9 +242,7 @@ export default function CustomerDetail() {
               体重
             </label>
             {isEditing ? (
-              <input
-                type="number"
-                step="0.1"
+              <select
                 value={editedCustomer?.weight || 0}
                 onChange={(e) =>
                   setEditedCustomer((prev) =>
@@ -221,9 +252,33 @@ export default function CustomerDetail() {
                   )
                 }
                 className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2"
-              />
+              >
+                {Array.from({ length: 261 }, (_, i) => 20 + i * 0.5).map(
+                  (weight) => (
+                    <option key={weight} value={weight}>
+                      {weight.toFixed(1)} kg
+                    </option>
+                  )
+                )}
+              </select>
             ) : (
-              <p className="mt-1 text-lg">{customer.weight} kg</p>
+              <select
+                value={customer.weight}
+                onChange={(e) => {
+                  const newWeight = parseFloat(e.target.value);
+                  setEditedCustomer({ ...customer, weight: newWeight });
+                  setIsEditing(true);
+                }}
+                className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2 bg-white cursor-pointer"
+              >
+                {Array.from({ length: 261 }, (_, i) => 20 + i * 0.5).map(
+                  (weight) => (
+                    <option key={weight} value={weight}>
+                      {weight.toFixed(1)} kg
+                    </option>
+                  )
+                )}
+              </select>
             )}
           </div>
           <div>
@@ -265,6 +320,54 @@ export default function CustomerDetail() {
             )}
           </div>
         </div>
+
+        {/* 体重履歴セクション */}
+        {weightHistory.length > 0 && (
+          <div className="mt-8 pt-6 border-t border-gray-200">
+            <h2 className="text-xl font-bold text-gray-800 mb-4">
+              直近の体重履歴
+            </h2>
+            <div className="overflow-x-auto">
+              <table className="min-w-full table-auto border-collapse">
+                <thead className="bg-gray-100">
+                  <tr>
+                    <th className="px-4 py-2 text-left text-sm font-medium text-gray-700 border">
+                      記録日時
+                    </th>
+                    <th className="px-4 py-2 text-left text-sm font-medium text-gray-700 border">
+                      体重
+                    </th>
+                    <th className="px-4 py-2 text-left text-sm font-medium text-gray-700 border">
+                      備考
+                    </th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {weightHistory.map((history) => (
+                    <tr key={history.id} className="hover:bg-gray-50">
+                      <td className="px-4 py-2 text-sm text-gray-900 border">
+                        {new Date(history.recorded_at).toLocaleString("ja-JP", {
+                          year: "numeric",
+                          month: "2-digit",
+                          day: "2-digit",
+                          hour: "2-digit",
+                          minute: "2-digit",
+                        })}
+                      </td>
+                      <td className="px-4 py-2 text-sm text-gray-900 border">
+                        {history.weight.toFixed(1)} kg
+                      </td>
+                      <td className="px-4 py-2 text-sm text-gray-900 border">
+                        {history.note}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
+
         <div className="mt-8">
           {isEditing && (
             <button

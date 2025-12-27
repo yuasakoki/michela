@@ -47,7 +47,9 @@ def register_customer():
     if not all(k in data for k in required):
         return jsonify({'error': 'Missing required fields'}), 400
 
+    # 顧客情報を登録
     doc_ref = db.collection('customer').document()
+    customer_id = doc_ref.id
     doc_ref.set({
         'name': data['name'],
         'age': int(data['age']),
@@ -56,8 +58,18 @@ def register_customer():
         'favorite_food': data['favorite_food'],
         'completion_date': data['completion_date']
     })
+    
+    # 初回の体重履歴を登録
+    from datetime import datetime
+    weight_history_ref = db.collection('weight_history').document()
+    weight_history_ref.set({
+        'customer_id': customer_id,
+        'weight': float(data['weight']),
+        'recorded_at': datetime.now().isoformat(),
+        'note': '初回登録'
+    })
 
-    return jsonify({"message": "ok", "id": doc_ref.id}), 201
+    return jsonify({"message": "ok", "id": customer_id}), 201
 
 
 @app.route('/get_customers', methods=['GET'])
@@ -90,7 +102,66 @@ def update_customer(id):
     try:
         doc_ref = db.collection('customer').document(id)
         doc_ref.update(data)
+        
+        # 体重が更新された場合は履歴に記録
+        if 'weight' in data:
+            from datetime import datetime
+            weight_history_ref = db.collection('weight_history').document()
+            weight_history_ref.set({
+                'customer_id': id,
+                'weight': float(data['weight']),
+                'recorded_at': datetime.now().isoformat(),
+                'note': '体重更新'
+            })
+        
         return jsonify({"message": "ok"}), 200
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/get_weight_history/<customer_id>', methods=['GET'])
+def get_weight_history(customer_id):
+    """顧客IDに基づく体重履歴を取得"""
+    try:
+        # limitパラメータで取得件数を制限（デフォルト10件）
+        limit = request.args.get('limit', 10, type=int)
+        
+        weight_history = []
+        query = db.collection('weight_history')\
+                  .where('customer_id', '==', customer_id)\
+                  .order_by('recorded_at', direction=firestore.Query.DESCENDING)\
+                  .limit(limit)
+        
+        for doc in query.stream():
+            history = doc.to_dict()
+            history['id'] = doc.id
+            weight_history.append(history)
+        
+        return jsonify(weight_history), 200
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/add_weight_record/<customer_id>', methods=['POST'])
+def add_weight_record(customer_id):
+    """体重記録を追加"""
+    data = request.json
+    if not data or 'weight' not in data:
+        return jsonify({"error": "Weight is required"}), 400
+    
+    try:
+        from datetime import datetime
+        weight_history_ref = db.collection('weight_history').document()
+        weight_history_ref.set({
+            'customer_id': customer_id,
+            'weight': float(data['weight']),
+            'recorded_at': data.get('recorded_at', datetime.now().isoformat()),
+            'note': data.get('note', '')
+        })
+        
+        # 顧客の現在の体重も更新
+        customer_ref = db.collection('customer').document(customer_id)
+        customer_ref.update({'weight': float(data['weight'])})
+        
+        return jsonify({"message": "ok", "id": weight_history_ref.id}), 201
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
