@@ -35,6 +35,21 @@ export default function CustomerDetail() {
   const [editedCustomer, setEditedCustomer] = useState<Customer | null>(null);
   const [weightHistory, setWeightHistory] = useState<WeightHistory[]>([]);
 
+  // BMI計算関数
+  const calculateBMI = (height: number, weight: number): number => {
+    const heightInMeters = height / 100;
+    return weight / (heightInMeters * heightInMeters);
+  };
+
+  // 年齢に基づく標準BMI値を取得
+  const getStandardBMI = (age: number): number => {
+    // 厚生労働省の日本人の標準体重に基づくBMI標準値
+    // 18-49歳: 22.0、50-69歳: 22.5、70歳以上: 23.0
+    if (age < 50) return 22.0;
+    if (age < 70) return 22.5;
+    return 23.0;
+  };
+
   useEffect(() => {
     const fetchCustomer = async () => {
       try {
@@ -318,6 +333,28 @@ export default function CustomerDetail() {
             ) : (
               <p className="mt-1 text-lg">{customer.completion_date}</p>
             )}
+          </div>
+
+          {/* BMI値表示 */}
+          <div className="pt-4 border-t border-gray-200">
+            <label className="block text-sm font-medium text-gray-700">
+              BMI値
+            </label>
+            <div className="mt-1">
+              <p className="text-lg">
+                <span className="font-semibold">現在:</span>{" "}
+                {calculateBMI(customer.height, customer.weight).toFixed(1)}
+              </p>
+              <p className="text-sm text-gray-600 mt-1">
+                標準BMI値（{customer.age}歳）:{" "}
+                {getStandardBMI(customer.age).toFixed(1)}
+              </p>
+              <p className="text-xs text-gray-500 mt-2">
+                ※ 標準BMI値は厚生労働省の日本人の標準体重に基づいています
+                <br />
+                （18-49歳: 22.0、50-69歳: 22.5、70歳以上: 23.0）
+              </p>
+            </div>
           </div>
         </div>
 
