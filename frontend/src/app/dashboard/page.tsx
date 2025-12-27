@@ -124,7 +124,7 @@ export default function Dashboard() {
               <option value="date-desc">完了予定日降順</option>
             </select>
           </div>
-          
+
           {/* スマホ用レイアウト: 氏名固定 + 横スクロール */}
           <div className="block md:hidden">
             <div className="flex">
@@ -149,7 +149,7 @@ export default function Dashboard() {
                   </div>
                 ))}
               </div>
-              
+
               {/* スクロール可能な列 */}
               <div className="overflow-x-auto flex-1">
                 <div className="inline-block min-w-full">
