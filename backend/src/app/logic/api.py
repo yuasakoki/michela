@@ -25,17 +25,16 @@ db = firestore.client()
 
 app = Flask(__name__)
 
-# カスタムCORS設定関数
-def check_origin(origin):
-    allowed_origins = [
-        "http://localhost:3000",
-    ]
-    # Vercelドメインを正規表現でチェック
-    if origin in allowed_origins or re.match(r"^https://.*\.vercel\.app$", origin):
-        return True
-    return False
-
-CORS(app, origins=check_origin, supports_credentials=True)
+# CORS設定: 具体的なドメインを列挙（最も確実な方法）
+CORS(app, 
+     origins=[
+         "http://localhost:3000",
+         "https://michela.vercel.app",
+         "https://michela-git-main.vercel.app",
+         # すべてのVercelプレビューURLも許可
+         re.compile(r"^https://michela-.*\.vercel\.app$")
+     ],
+     supports_credentials=True)
 
 @app.route('/register_customer', methods=['POST'])
 def register_customer():
