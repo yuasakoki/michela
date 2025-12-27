@@ -4,7 +4,6 @@ import firebase_admin
 from firebase_admin import credentials, firestore
 import os
 import json
-import re
 
 # Firebase認証情報の読み込み（ローカル/本番環境対応）
 if 'GOOGLE_CREDENTIALS' in os.environ:
@@ -26,8 +25,8 @@ db = firestore.client()
 app = Flask(__name__)
 CORS(app, origins=[
     "http://localhost:3000",
-    re.compile(r"^https://.*\.vercel\.app$")
-])
+    r"https://.*\.vercel\.app"
+], supports_credentials=True)
 
 @app.route('/register_customer', methods=['POST'])
 def register_customer():
