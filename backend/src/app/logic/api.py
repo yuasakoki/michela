@@ -4,10 +4,17 @@ import firebase_admin
 from firebase_admin import credentials, firestore
 import os
 import json
+import re
 
-# 環境変数からFirebaseキーを読み込み
-cred_dict = json.loads(os.environ['GOOGLE_CREDENTIALS'])
-cred = credentials.Certificate(cred_dict)
+# Firebase認証情報の読み込み（ローカル/本番環境対応）
+if 'GOOGLE_CREDENTIALS' in os.environ:
+    # 本番環境（Render.com）: 環境変数から読み込み
+    cred_dict = json.loads(os.environ['GOOGLE_CREDENTIALS'])
+    cred = credentials.Certificate(cred_dict)
+else:
+    # ローカル環境: JSONファイルから読み込み
+    key_path = os.path.join(os.path.dirname(__file__), '..', '..', '..', 'keys', 'michela-481217-ca8c2322cbd0.json')
+    cred = credentials.Certificate(key_path)
 
 if not firebase_admin._apps:
     firebase_admin.initialize_app(cred)
@@ -19,7 +26,7 @@ db = firestore.client()
 app = Flask(__name__)
 CORS(app, origins=[
     "http://localhost:3000",
-    "https://*.vercel.app"
+    re.compile(r"^https://.*\.vercel\.app$")
 ])
 
 @app.route('/register_customer', methods=['POST'])
