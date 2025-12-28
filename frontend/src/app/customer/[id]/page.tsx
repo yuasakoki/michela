@@ -415,25 +415,25 @@ export default function CustomerDetail() {
         </div>
 
         {/* 体重履歴セクション */}
-        {weightHistory.length > 0 && (
-          <div className="mt-8 pt-6 border-t border-gray-200">
-            <h2 className="text-xl font-bold text-gray-800 mb-4">
-              直近の体重履歴
-            </h2>
-            <div className="overflow-x-auto">
-              <table className="min-w-full table-auto border-collapse">
-                <thead className="bg-gray-100">
-                  <tr>
-                    <th className="px-4 py-2 text-left text-sm font-medium text-gray-700 border">
-                      記録日時
-                    </th>
-                    <th className="px-4 py-2 text-left text-sm font-medium text-gray-700 border">
-                      体重
-                    </th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {weightHistory.map((history) => (
+        <div className="mt-8 pt-6 border-t border-gray-200">
+          <h2 className="text-xl font-bold text-gray-800 mb-4">
+            直近の体重履歴
+          </h2>
+          <div className="overflow-x-auto">
+            <table className="min-w-full table-auto border-collapse">
+              <thead className="bg-gray-100">
+                <tr>
+                  <th className="px-4 py-2 text-left text-sm font-medium text-gray-700 border">
+                    記録日時
+                  </th>
+                  <th className="px-4 py-2 text-left text-sm font-medium text-gray-700 border">
+                    体重
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                {weightHistory.length > 0 ? (
+                  weightHistory.map((history) => (
                     <tr key={history.id} className="hover:bg-gray-50">
                       <td className="px-4 py-2 text-sm text-gray-900 border">
                         {new Date(history.recorded_at).toLocaleString("ja-JP", {
@@ -448,12 +448,21 @@ export default function CustomerDetail() {
                         {history.weight.toFixed(1)} kg
                       </td>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+                  ))
+                ) : (
+                  <tr>
+                    <td
+                      colSpan={2}
+                      className="px-4 py-8 text-center text-gray-500 border"
+                    >
+                      体重履歴がありません。体重を変更すると履歴が記録されます。
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
           </div>
-        )}
+        </div>
 
         <div className="mt-8">
           {isEditing && (

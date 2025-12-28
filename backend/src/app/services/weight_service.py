@@ -12,17 +12,21 @@ def get_weight_history(customer_id, limit=10):
     """顧客IDに基づく体重履歴を取得"""
     db = get_db()
     weight_history = []
+    
+    # whereのみでクエリ（インデックス不要）
     query = db.collection('weight_history')\
-              .where('customer_id', '==', customer_id)\
-              .order_by('recorded_at', direction=firestore.Query.DESCENDING)\
-              .limit(limit)
+              .where('customer_id', '==', customer_id)
     
     for doc in query.stream():
         history = doc.to_dict()
         history['id'] = doc.id
         weight_history.append(history)
     
-    return weight_history
+    # Pythonでソート（新しい順）
+    weight_history.sort(key=lambda x: x.get('recorded_at', ''), reverse=True)
+    
+    # limit適用
+    return weight_history[:limit]
 
 
 def add_weight_record(customer_id, weight, recorded_at=None, note=''):

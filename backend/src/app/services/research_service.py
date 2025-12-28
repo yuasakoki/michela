@@ -224,15 +224,22 @@ def search_research(query, offset=0):
                     if english_title.endswith('.'):
                         english_title = english_title[:-1]
                     
-                    # googletransで日本語翻訳（エラー時は英語のまま）
-                    japanese_title = english_title
-                    try:
-                        from googletrans import Translator
-                        title_translator = Translator()
-                        translated_title = title_translator.translate(english_title, src='en', dest='ja')
-                        japanese_title = translated_title.text
-                    except Exception as translate_error:
-                        print(f"Title translation error for {pmid}: {translate_error}")
+                    # googletransで日本語翻訳（3回リトライ）
+                    japanese_title = english_title  # デフォルトは英語
+                    for attempt in range(3):
+                        try:
+                            from googletrans import Translator
+                            title_translator = Translator()
+                            translated_title = title_translator.translate(english_title, src='en', dest='ja')
+                            japanese_title = translated_title.text
+                            break  # 成功したらループを抜ける
+                        except Exception as translate_error:
+                            print(f"Title translation attempt {attempt + 1} failed for {pmid}: {translate_error}")
+                            if attempt < 2:  # 最後の試行でなければ
+                                import time
+                                time.sleep(1)  # 1秒待ってリトライ
+                            else:
+                                print(f"Title translation failed after 3 attempts, using English: {english_title}")
                     
                     # 著者取得
                     authors = []

@@ -14,8 +14,9 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..'))
 # サービスモジュールのインポート
 from app.services import customer_service, weight_service, ai_service, research_service
 
-# .envファイルから環境変数を読み込み
-load_dotenv()
+# .envファイルから環境変数を読み込み（backendディレクトリの.envを指定）
+env_path = os.path.join(os.path.dirname(__file__), '..', '..', '..', '.env')
+load_dotenv(dotenv_path=env_path)
 
 # Firebase認証情報の読み込み（ローカル/本番環境対応）
 if 'GOOGLE_CREDENTIALS' in os.environ:
