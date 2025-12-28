@@ -14,6 +14,14 @@ interface Customer {
   completion_date: string;
 }
 
+interface ResearchArticle {
+  title: string;
+  summary: string;
+  source: string;
+  date: string;
+  url: string;
+}
+
 export default function Dashboard() {
   useAuth(); // 認証チェック
 
@@ -21,12 +29,17 @@ export default function Dashboard() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [sortOption, setSortOption] = useState<string>("");
+  const [researchArticles, setResearchArticles] = useState<ResearchArticle[]>(
+    []
+  );
+  const [loadingResearch, setLoadingResearch] = useState(false);
+  const [isExpanded, setIsExpanded] = useState(false);
 
   useEffect(() => {
     const fetchCustomers = async () => {
       try {
         const response = await fetch(
-          "https://michela.onrender.com/get_customers"
+          `${process.env.NEXT_PUBLIC_API_URL}/get_customers`
         );
         if (response.ok) {
           const data = await response.json();
@@ -43,7 +56,29 @@ export default function Dashboard() {
     };
 
     fetchCustomers();
+    // 最新研究も初回自動取得
+    fetchResearchArticles();
   }, []);
+
+  const fetchResearchArticles = async () => {
+    setLoadingResearch(true);
+    try {
+      const response = await fetch(
+        `${process.env.NEXT_PUBLIC_API_URL}/get_latest_research`
+      );
+      if (response.ok) {
+        const data = await response.json();
+        setResearchArticles(data.articles || []);
+      } else {
+        alert("最新研究の取得に失敗しました。");
+      }
+    } catch (err) {
+      alert("ネットワークエラーが発生しました。");
+      console.error("Error fetching research:", err);
+    } finally {
+      setLoadingResearch(false);
+    }
+  };
 
   const sortedCustomers = React.useMemo(() => {
     const sorted = [...customers];
@@ -66,6 +101,20 @@ export default function Dashboard() {
     }
     return sorted;
   }, [customers, sortOption]);
+
+  // 研究記事を日付順にソート（新しい順）
+  const sortedResearchArticles = React.useMemo(() => {
+    return [...researchArticles].sort(
+      (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
+    );
+  }, [researchArticles]);
+
+  const handleSearchMore = () => {
+    window.open(
+      "https://www.google.com/search?q=筋トレ+ダイエット+最新研究",
+      "_blank"
+    );
+  };
 
   if (loading) {
     return (
@@ -97,12 +146,23 @@ export default function Dashboard() {
           メインメニュー
         </h1> */}
         <div className="text-right mb-4 md:mb-6">
+          <Link href="/research-search">
+            <button className="px-4 py-2 md:px-6 md:py-3 bg-purple-600 text-white rounded-lg shadow-md hover:bg-purple-700 transition duration-300 text-sm md:text-base mr-2">
+              研究を検索
+            </button>
+          </Link>
+          <Link href="/ai-chat">
+            <button className="px-4 py-2 md:px-6 md:py-3 bg-green-600 text-white rounded-lg shadow-md hover:bg-green-700 transition duration-300 text-sm md:text-base mr-2">
+              AI相談
+            </button>
+          </Link>
           <Link href="/customer">
             <button className="px-4 py-2 md:px-6 md:py-3 bg-blue-600 text-white rounded-lg shadow-md hover:bg-blue-700 transition duration-300 text-sm md:text-base">
               顧客登録
             </button>
           </Link>
         </div>
+
         <div className="bg-white shadow-lg rounded-lg overflow-hidden">
           <div className="p-4 bg-gray-50 border-b">
             <label
