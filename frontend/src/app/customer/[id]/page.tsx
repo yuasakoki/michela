@@ -20,7 +20,6 @@ interface WeightHistory {
   customer_id: string;
   weight: number;
   recorded_at: string;
-  note: string;
 }
 
 export default function CustomerDetail() {
@@ -34,6 +33,7 @@ export default function CustomerDetail() {
   const [isEditing, setIsEditing] = useState(false);
   const [editedCustomer, setEditedCustomer] = useState<Customer | null>(null);
   const [weightHistory, setWeightHistory] = useState<WeightHistory[]>([]);
+  const [selectedWeight, setSelectedWeight] = useState<number>(0);
 
   // BMI計算関数
   const calculateBMI = (height: number, weight: number): number => {
@@ -54,7 +54,7 @@ export default function CustomerDetail() {
     const fetchCustomer = async () => {
       try {
         const response = await fetch(
-          `https://michela.onrender.com/get_customer/${id}`
+          `${process.env.NEXT_PUBLIC_API_URL}/get_customer/${id}`
         );
         if (response.ok) {
           const data = await response.json();
@@ -73,7 +73,7 @@ export default function CustomerDetail() {
     const fetchWeightHistory = async () => {
       try {
         const response = await fetch(
-          `https://michela.onrender.com/get_weight_history/${id}?limit=5`
+          `${process.env.NEXT_PUBLIC_API_URL}/get_weight_history/${id}?limit=5`
         );
         if (response.ok) {
           const data = await response.json();
@@ -93,6 +93,7 @@ export default function CustomerDetail() {
   useEffect(() => {
     if (customer) {
       setEditedCustomer(customer);
+      setSelectedWeight(customer.weight);
     }
   }, [customer]);
 
@@ -100,7 +101,7 @@ export default function CustomerDetail() {
     if (!editedCustomer) return;
     try {
       const response = await fetch(
-        `https://michela.onrender.com/update_customer/${id}`,
+        `${process.env.NEXT_PUBLIC_API_URL}/update_customer/${id}`,
         {
           method: "PUT",
           headers: { "Content-Type": "application/json" },
@@ -120,7 +121,7 @@ export default function CustomerDetail() {
 
         // 体重履歴を再取得
         const historyResponse = await fetch(
-          `https://michela.onrender.com/get_weight_history/${id}?limit=5`
+          `${process.env.NEXT_PUBLIC_API_URL}/get_weight_history/${id}?limit=5`
         );
         if (historyResponse.ok) {
           const historyData = await historyResponse.json();
@@ -131,6 +132,55 @@ export default function CustomerDetail() {
       }
     } catch (err) {
       alert("ネットワークエラー");
+    }
+  };
+
+  const handleWeightChange = async () => {
+    if (!customer || selectedWeight === customer.weight) {
+      alert("体重が変更されていません。");
+      return;
+    }
+
+    try {
+      // 体重履歴を追加
+      const historyResponse = await fetch(
+        `${process.env.NEXT_PUBLIC_API_URL}/add_weight_record/${id}`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            weight: selectedWeight,
+          }),
+        }
+      );
+
+      if (historyResponse.ok) {
+        // 顧客情報を再取得
+        const customerResponse = await fetch(
+          `${process.env.NEXT_PUBLIC_API_URL}/get_customer/${id}`
+        );
+        if (customerResponse.ok) {
+          const data = await customerResponse.json();
+          setCustomer(data);
+          setSelectedWeight(data.weight);
+        }
+
+        // 体重履歴を再取得
+        const weightHistoryResponse = await fetch(
+          `${process.env.NEXT_PUBLIC_API_URL}/get_weight_history/${id}?limit=5`
+        );
+        if (weightHistoryResponse.ok) {
+          const historyData = await weightHistoryResponse.json();
+          setWeightHistory(historyData);
+        }
+
+        alert("体重が更新されました。");
+      } else {
+        alert("体重の更新に失敗しました。");
+      }
+    } catch (err) {
+      alert("ネットワークエラーが発生しました。");
+      console.error("Error updating weight:", err);
     }
   };
 
@@ -277,23 +327,29 @@ export default function CustomerDetail() {
                 )}
               </select>
             ) : (
-              <select
-                value={customer.weight}
-                onChange={(e) => {
-                  const newWeight = parseFloat(e.target.value);
-                  setEditedCustomer({ ...customer, weight: newWeight });
-                  setIsEditing(true);
-                }}
-                className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2 bg-white cursor-pointer"
-              >
-                {Array.from({ length: 261 }, (_, i) => 20 + i * 0.5).map(
-                  (weight) => (
-                    <option key={weight} value={weight}>
-                      {weight.toFixed(1)} kg
-                    </option>
-                  )
-                )}
-              </select>
+              <div className="flex items-center gap-2 mt-1 max-w-md">
+                <select
+                  value={selectedWeight}
+                  onChange={(e) =>
+                    setSelectedWeight(parseFloat(e.target.value))
+                  }
+                  className="block w-auto border border-gray-300 rounded-md shadow-sm p-2 bg-white cursor-pointer"
+                >
+                  {Array.from({ length: 261 }, (_, i) => 20 + i * 0.5).map(
+                    (weight) => (
+                      <option key={weight} value={weight}>
+                        {weight.toFixed(1)} kg
+                      </option>
+                    )
+                  )}
+                </select>
+                <button
+                  onClick={handleWeightChange}
+                  className="px-4 py-2 bg-blue-600 text-white rounded-md shadow-sm hover:bg-blue-700 transition duration-300 whitespace-nowrap"
+                >
+                  変更
+                </button>
+              </div>
             )}
           </div>
           <div>
@@ -374,9 +430,6 @@ export default function CustomerDetail() {
                     <th className="px-4 py-2 text-left text-sm font-medium text-gray-700 border">
                       体重
                     </th>
-                    <th className="px-4 py-2 text-left text-sm font-medium text-gray-700 border">
-                      備考
-                    </th>
                   </tr>
                 </thead>
                 <tbody>
@@ -393,9 +446,6 @@ export default function CustomerDetail() {
                       </td>
                       <td className="px-4 py-2 text-sm text-gray-900 border">
                         {history.weight.toFixed(1)} kg
-                      </td>
-                      <td className="px-4 py-2 text-sm text-gray-900 border">
-                        {history.note}
                       </td>
                     </tr>
                   ))}

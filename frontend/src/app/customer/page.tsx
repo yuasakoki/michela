@@ -17,7 +17,7 @@ export default function CustomerRegist() {
   const handleSubmit = async () => {
     try {
       const response = await fetch(
-        "https://michela.onrender.com/register_customer",
+        `${process.env.NEXT_PUBLIC_API_URL}/register_customer`,
         {
           method: "POST",
           headers: {
