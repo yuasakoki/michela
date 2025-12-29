@@ -229,22 +229,33 @@ def search_research(query, offset=0):
                     if english_title.endswith('.'):
                         english_title = english_title[:-1]
                     
+                    print(f"[search_research] PMID {pmid} - Original English title: {english_title[:50]}...")
+                    
                     # googletransで日本語翻訳（3回リトライ）
                     japanese_title = english_title  # デフォルトは英語
+                    translation_successful = False
                     for attempt in range(3):
                         try:
+                            print(f"[search_research] PMID {pmid} - Translation attempt {attempt + 1}")
                             from googletrans import Translator
                             title_translator = Translator()
                             translated_title = title_translator.translate(english_title, src='en', dest='ja')
                             japanese_title = translated_title.text
+                            translation_successful = True
+                            print(f"[search_research] PMID {pmid} - Translation SUCCESS: {japanese_title[:50]}...")
                             break  # 成功したらループを抜ける
                         except Exception as translate_error:
-                            print(f"Title translation attempt {attempt + 1} failed for {pmid}: {translate_error}")
+                            print(f"[search_research] PMID {pmid} - Translation attempt {attempt + 1} FAILED: {type(translate_error).__name__}: {str(translate_error)}")
                             if attempt < 2:  # 最後の試行でなければ
                                 import time
                                 time.sleep(1)  # 1秒待ってリトライ
                             else:
-                                print(f"Title translation failed after 3 attempts, using English: {english_title}")
+                                print(f"[search_research] PMID {pmid} - All translation attempts failed, using English title")
+                    
+                    if not translation_successful:
+                        print(f"[search_research] PMID {pmid} - Final title (ENGLISH): {japanese_title[:50]}...")
+                    else:
+                        print(f"[search_research] PMID {pmid} - Final title (JAPANESE): {japanese_title[:50]}...")
                     
                     # 著者取得
                     authors = []
