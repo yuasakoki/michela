@@ -217,9 +217,29 @@ export default function CustomerDetail() {
 
   if (loading) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-gray-100">
+      <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-blue-50 via-purple-50 to-pink-50">
         <div className="text-center">
-          <h1 className="text-3xl font-bold text-gray-800">読み込み中...</h1>
+          <div className="animate-float animate-pulse-glow mb-6">
+            <Image
+              src="/vercel.svg"
+              alt="loading"
+              width={200}
+              height={200}
+              priority
+            />
+          </div>
+          <div className="flex items-center justify-center gap-2">
+            <div className="w-3 h-3 bg-blue-500 rounded-full animate-bounce"></div>
+            <div
+              className="w-3 h-3 bg-purple-500 rounded-full animate-bounce"
+              style={{ animationDelay: "0.1s" }}
+            ></div>
+            <div
+              className="w-3 h-3 bg-pink-500 rounded-full animate-bounce"
+              style={{ animationDelay: "0.2s" }}
+            ></div>
+          </div>
+          <p className="mt-4 text-gray-600 text-lg">データを読み込んでいます</p>
         </div>
       </div>
     );
@@ -251,7 +271,17 @@ export default function CustomerDetail() {
           <Image src="/vercel.svg" alt="logo" width={150} height={150} />
         </div>
         <h1 className="text-3xl font-bold text-gray-800 mb-6">顧客詳細</h1>
-        <div className="mb-6">
+        <div className="mb-6 flex gap-3">
+          <Link href={`/customer/${id}/training`}>
+            <button className="px-6 py-3 bg-purple-600 text-white rounded-lg shadow-md hover:bg-purple-700 transition duration-300">
+              トレーニング記録
+            </button>
+          </Link>
+          <Link href={`/customer/${id}/meal`}>
+            <button className="px-6 py-3 bg-orange-600 text-white rounded-lg shadow-md hover:bg-orange-700 transition duration-300">
+              食事記録
+            </button>
+          </Link>
           {!isEditing ? (
             <button
               onClick={() => setIsEditing(true)}
