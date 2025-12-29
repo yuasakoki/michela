@@ -91,6 +91,15 @@ def update_customer(id):
         return jsonify({'error': str(e)}), 500
 
 
+@app.route('/delete_customer/<id>', methods=['DELETE'])
+def delete_customer(id):
+    try:
+        customer_service.delete_customer(id)
+        return jsonify({"message": "ok"}), 200
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
 # ==================== 体重履歴エンドポイント ====================
 
 @app.route('/get_weight_history/<customer_id>', methods=['GET'])

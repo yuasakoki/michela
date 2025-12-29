@@ -189,79 +189,61 @@ export default function Dashboard() {
             </select>
           </div>
 
-          {/* スマホ用レイアウト: 氏名固定 + 横スクロール */}
-          <div className="block md:hidden">
-            <div className="flex">
-              {/* 氏名列（固定） */}
-              <div className="flex-shrink-0 w-32 border-r border-gray-200">
-                <div className="bg-gray-200 px-4 py-3 sticky top-0">
-                  <span className="text-xs font-medium text-gray-500 uppercase tracking-wider">
+          {/* スマホ用レイアウト: 氏名列固定 + 横スクロール（テーブル構造） */}
+          <div className="block md:hidden overflow-x-auto">
+            <table className="min-w-full table-auto">
+              <thead className="bg-gray-200">
+                <tr>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider sticky left-0 bg-gray-200 z-10 border-r border-gray-300">
                     氏名
-                  </span>
-                </div>
+                  </th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
+                    年齢
+                  </th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
+                    身長 (cm)
+                  </th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
+                    体重 (kg)
+                  </th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
+                    好きな食べ物
+                  </th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
+                    完了予定
+                  </th>
+                </tr>
+              </thead>
+              <tbody className="bg-white divide-y divide-gray-200">
                 {sortedCustomers.map((customer) => (
-                  <div
-                    key={customer.id}
-                    className="px-4 py-4 border-b border-gray-200 bg-white"
-                  >
-                    <Link
-                      href={`/customer/${customer.id}`}
-                      className="text-blue-600 hover:text-blue-800 font-medium text-sm"
-                    >
-                      {customer.name}
-                    </Link>
-                  </div>
+                  <tr key={customer.id} className="hover:bg-gray-50">
+                    <td className="px-4 py-4 whitespace-nowrap sticky left-0 bg-white z-10 border-r border-gray-200">
+                      <Link
+                        href={`/customer/${customer.id}`}
+                        className="text-blue-600 hover:text-blue-800 font-medium text-sm"
+                      >
+                        {customer.name}
+                      </Link>
+                    </td>
+                    <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-900">
+                      {customer.age}
+                    </td>
+                    <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-900">
+                      {customer.height}
+                    </td>
+                    <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-900">
+                      {customer.weight}
+                    </td>
+                    <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-900">
+                      {customer.favorite_food}
+                    </td>
+                    <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-900">
+                      {customer.completion_date}
+                    </td>
+                  </tr>
                 ))}
-              </div>
-
-              {/* スクロール可能な列 */}
-              <div className="overflow-x-auto flex-1">
-                <div className="inline-block min-w-full">
-                  <table className="min-w-full">
-                    <thead className="bg-gray-200 sticky top-0">
-                      <tr>
-                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
-                          年齢
-                        </th>
-                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
-                          身長 (cm)
-                        </th>
-                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
-                          体重 (kg)
-                        </th>
-                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
-                          好きな食べ物
-                        </th>
-                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
-                          完了予定
-                        </th>
-                      </tr>
-                    </thead>
-                    <tbody className="bg-white divide-y divide-gray-200">
-                      {sortedCustomers.map((customer) => (
-                        <tr key={customer.id} className="hover:bg-gray-50">
-                          <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-900">
-                            {customer.age}
-                          </td>
-                          <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-900">
-                            {customer.height}
-                          </td>
-                          <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-900">
-                            {customer.weight}
-                          </td>
-                          <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-900">
-                            {customer.favorite_food}
-                          </td>
-                          <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-900">
-                            {customer.completion_date}
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-            </div>
+              </tbody>
+            </table>
           </div>
 
           {/* PC用レイアウト: 通常のテーブル */}

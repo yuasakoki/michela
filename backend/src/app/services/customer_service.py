@@ -77,5 +77,18 @@ def update_customer(customer_id, data):
             'recorded_at': datetime.now().isoformat(),
             'note': '体重更新'
         })
+
+
+def delete_customer(customer_id):
+    """顧客を削除（関連する体重履歴も削除）"""
+    db = get_db()
+    
+    # 体重履歴を削除
+    weight_history_query = db.collection('weight_history').where('customer_id', '==', customer_id)
+    for doc in weight_history_query.stream():
+        doc.reference.delete()
+    
+    # 顧客を削除
+    db.collection('customer').document(customer_id).delete()
     
     return True
