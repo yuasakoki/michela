@@ -4,10 +4,6 @@ import Link from "next/link";
 import Image from "next/image";
 import { useAuth } from "@/hooks/useAuth";
 
-export const metadata = {
-  title: "顧客登録",
-};
-
 export default function CustomerRegist() {
   useAuth(); // 認証チェック
 
