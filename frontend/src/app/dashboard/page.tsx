@@ -4,6 +4,10 @@ import Link from "next/link";
 import Image from "next/image";
 import { useAuth } from "@/hooks/useAuth";
 
+export const metadata = {
+  title: "ダッシュボード",
+};
+
 interface Customer {
   id: string;
   name: string;
@@ -24,6 +28,10 @@ interface ResearchArticle {
 
 export default function Dashboard() {
   useAuth(); // 認証チェック
+
+  useEffect(() => {
+    document.title = "ダッシュボード | MII Fit";
+  }, []);
 
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [loading, setLoading] = useState(true);

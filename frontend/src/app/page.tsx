@@ -1,8 +1,17 @@
 "use client";
 import Image from "next/image";
 import { useLogin } from "../hooks/useLogin";
+import { useEffect } from "react";
+
+export const metadata = {
+  title: "MII Fit",
+};
 
 export default function Home() {
+  useEffect(() => {
+    document.title = "MII Fit";
+  }, []);
+
   const login = useLogin();
 
   return (

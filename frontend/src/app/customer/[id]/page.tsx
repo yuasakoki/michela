@@ -94,6 +94,7 @@ export default function CustomerDetail() {
     if (customer) {
       setEditedCustomer(customer);
       setSelectedWeight(customer.weight);
+      document.title = `${customer.name} | MII Fit`;
     }
   }, [customer]);
 

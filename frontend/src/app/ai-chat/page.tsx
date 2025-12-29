@@ -1,5 +1,5 @@
 "use client";
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { useAuth } from "@/hooks/useAuth";
@@ -11,6 +11,10 @@ interface Message {
 
 export default function AiChat() {
   useAuth(); // 認証チェック
+
+  useEffect(() => {
+    document.title = "AI相談 | MII Fit";
+  }, []);
 
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");

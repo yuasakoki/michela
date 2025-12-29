@@ -1,5 +1,5 @@
 "use client";
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { useAuth } from "@/hooks/useAuth";
@@ -21,6 +21,10 @@ interface Summary {
 
 export default function ResearchSearch() {
   useAuth();
+
+  useEffect(() => {
+    document.title = "研究検索 | MII Fit";
+  }, []);
 
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<SearchResult[]>([]);

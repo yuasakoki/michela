@@ -1,11 +1,19 @@
 "use client";
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { useAuth } from "@/hooks/useAuth";
 
+export const metadata = {
+  title: "顧客登録",
+};
+
 export default function CustomerRegist() {
   useAuth(); // 認証チェック
+
+  useEffect(() => {
+    document.title = "顧客登録 | MII Fit";
+  }, []);
 
   const [name, setName] = useState("");
   const [age, setAge] = useState("");

@@ -139,6 +139,8 @@ def get_cached_research():
 def search_research(query, offset=0):
     """研究検索（日本語→英語翻訳→PubMed検索）"""
     try:
+        print(f"[search_research] Starting search for query: {query}, offset: {offset}")
+        
         # 日本語→英語翻訳（タイムアウト対策 + リトライ）
         english_query = query  # デフォルトはそのまま
         
@@ -149,11 +151,12 @@ def search_research(query, offset=0):
                 translator = Translator()
                 translated = translator.translate(query, src='ja', dest='en')
                 english_query = translated.text
+                print(f"[search_research] Translation successful: {query} -> {english_query}")
                 break  # 成功したらループを抜ける
             except Exception as translate_error:
-                print(f"Translation attempt {attempt + 1} failed: {translate_error}")
+                print(f"[search_research] Translation attempt {attempt + 1} failed: {translate_error}")
                 if attempt == 2:  # 最後の試行
-                    print(f"Translation failed after 3 attempts, using original query: {query}")
+                    print(f"[search_research] Translation failed after 3 attempts, using original query: {query}")
                 else:
                     import time
                     time.sleep(1)  # 1秒待ってリトライ
@@ -172,6 +175,7 @@ def search_research(query, offset=0):
             'retmode': 'json'
         }
         
+        print(f"[search_research] Querying PubMed with: {fitness_query[:100]}...")
         search_response = requests.get(search_url, params=search_params, timeout=10)
         search_data = search_response.json()
         
@@ -179,6 +183,7 @@ def search_research(query, offset=0):
         total_count = 0
         if 'esearchresult' in search_data and 'count' in search_data['esearchresult']:
             total_count = int(search_data['esearchresult']['count'])
+            print(f"[search_research] Found {total_count} articles")
         
         if 'esearchresult' not in search_data or 'idlist' not in search_data['esearchresult']:
             return {
@@ -268,6 +273,9 @@ def search_research(query, offset=0):
         }, None
         
     except Exception as e:
+        print(f"[search_research] ERROR: {str(e)}")
+        import traceback
+        traceback.print_exc()
         return None, str(e)
 
 
