@@ -122,9 +122,29 @@ export default function Dashboard() {
 
   if (loading) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-gray-100">
+      <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-blue-50 via-purple-50 to-pink-50">
         <div className="text-center">
-          <h1 className="text-3xl font-bold text-gray-800">読み込み中...</h1>
+          <div className="animate-float animate-pulse-glow mb-6">
+            <Image
+              src="/vercel.svg"
+              alt="loading"
+              width={200}
+              height={200}
+              priority
+            />
+          </div>
+          <div className="flex items-center justify-center gap-2">
+            <div className="w-3 h-3 bg-blue-500 rounded-full animate-bounce"></div>
+            <div
+              className="w-3 h-3 bg-purple-500 rounded-full animate-bounce"
+              style={{ animationDelay: "0.1s" }}
+            ></div>
+            <div
+              className="w-3 h-3 bg-pink-500 rounded-full animate-bounce"
+              style={{ animationDelay: "0.2s" }}
+            ></div>
+          </div>
+          <p className="mt-4 text-gray-600 text-lg">データを読み込んでいます</p>
         </div>
       </div>
     );
