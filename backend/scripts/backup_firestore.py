@@ -41,16 +41,21 @@ def initialize_firebase(environment='production'):
         cred = credentials.Certificate(cred_dict)
     else:
         # From file (local development)
-        key_path = os.path.join(
-            os.path.dirname(__file__), 
-            '..', 
-            'keys', 
-            'michela-481217-ca8c2322cbd0.json'
-        )
-        if not os.path.exists(key_path):
+        # Look for service account key file with pattern michela-*.json
+        keys_dir = os.path.join(os.path.dirname(__file__), '..', 'keys')
+        if os.path.exists(keys_dir):
+            key_files = [f for f in os.listdir(keys_dir) if f.startswith('michela-') and f.endswith('.json')]
+            if key_files:
+                key_path = os.path.join(keys_dir, key_files[0])
+            else:
+                raise FileNotFoundError(
+                    f"No Firebase credentials found in {keys_dir}. "
+                    "Please provide a michela-*.json key file or set GOOGLE_CREDENTIALS environment variable."
+                )
+        else:
             raise FileNotFoundError(
-                f"Firebase credentials not found at {key_path}. "
-                "Please set GOOGLE_CREDENTIALS environment variable or provide the key file."
+                f"Keys directory not found at {keys_dir}. "
+                "Please create the directory and add your Firebase credentials or set GOOGLE_CREDENTIALS environment variable."
             )
         cred = credentials.Certificate(key_path)
     
@@ -76,8 +81,12 @@ def backup_collection(db, collection_name, output_dir):
     
     # Save to JSON file
     output_file = output_dir / f"{collection_name}.json"
-    with open(output_file, 'w', encoding='utf-8') as f:
-        json.dump(backup_data, f, ensure_ascii=False, indent=2, default=str)
+    try:
+        with open(output_file, 'w', encoding='utf-8') as f:
+            json.dump(backup_data, f, ensure_ascii=False, indent=2, default=str)
+    except IOError as e:
+        print(f"  ✗ Error writing backup file: {e}")
+        raise
     
     print(f"  ✓ Backed up {doc_count} documents to {output_file}")
     return doc_count
@@ -101,7 +110,8 @@ def get_all_collections(db):
         # Check if collection exists by trying to get first document
         try:
             docs = collection_ref.limit(1).stream()
-            if any(docs):
+            # More efficient: check if at least one document exists
+            if next(docs, None) is not None:
                 existing_collections.append(collection_name)
         except Exception as e:
             print(f"  ! Warning: Could not access collection '{collection_name}': {e}")

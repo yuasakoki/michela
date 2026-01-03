@@ -11,7 +11,7 @@ services:
     environment:
       - NODE_ENV=staging
     env_file:
-      - .env.staging
+      - ./.env.staging
     volumes:
       - ./frontend:/app
       - /app/node_modules
