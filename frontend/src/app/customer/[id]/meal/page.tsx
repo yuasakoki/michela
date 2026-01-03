@@ -4,6 +4,7 @@ import { useRouter, useParams } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
 import { useAuth } from "@/hooks/useAuth";
+import { API_ENDPOINTS } from "@/constants/api";
 import { toast, TOAST_DURATION } from "@/utils/toast";
 import {
   SUCCESS_MESSAGES,
@@ -98,9 +99,7 @@ export default function MealHistory() {
 
   const fetchMealRecords = async () => {
     try {
-      const response = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/get_meal_records/${customerId}?limit=50`
-      );
+      const response = await fetch(API_ENDPOINTS.MEAL_RECORDS(customerId, undefined, undefined, 50));
       if (response.ok) {
         const data = await response.json();
         setRecords(data);
@@ -117,9 +116,7 @@ export default function MealHistory() {
 
   const fetchDailySummary = async (date: string) => {
     try {
-      const response = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/get_daily_nutrition/${customerId}/${date}`
-      );
+      const response = await fetch(API_ENDPOINTS.DAILY_NUTRITION(customerId, date));
       if (response.ok) {
         const data = await response.json();
         setDailySummary(data);
@@ -131,9 +128,7 @@ export default function MealHistory() {
 
   const fetchNutritionGoal = async () => {
     try {
-      const response = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/get_nutrition_goal/${customerId}`
-      );
+      const response = await fetch(API_ENDPOINTS.NUTRITION_GOAL(customerId));
       if (response.ok) {
         const data = await response.json();
         setNutritionGoal(data);
@@ -145,9 +140,7 @@ export default function MealHistory() {
 
   const handleDelete = async (recordId: string) => {
     try {
-      const response = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/delete_meal_record/${recordId}`,
-        {
+      const response = await fetch(API_ENDPOINTS.DELETE_MEAL_RECORD(recordId), {
           method: "DELETE",
         }
       );
@@ -172,9 +165,7 @@ export default function MealHistory() {
     setAiAdvice("");
     setCachedUntil(null);
     try {
-      const response = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/get_meal_advice/${customerId}`
-      );
+      const response = await fetch(API_ENDPOINTS.MEAL_ADVICE(customerId));
       if (response.ok) {
         const data = await response.json();
         setAiAdvice(data.advice);

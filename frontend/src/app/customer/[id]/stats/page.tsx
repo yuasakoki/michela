@@ -4,6 +4,7 @@ import { useParams } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
 import { useAuth } from "@/hooks/useAuth";
+import { API_ENDPOINTS } from "@/constants/api";
 import WeightChart from "@/components/WeightChart";
 import TrainingVolumeChart from "@/components/TrainingVolumeChart";
 import NutritionChart from "@/components/NutritionChart";
@@ -89,9 +90,7 @@ export default function CustomerStats() {
   };
 
   const fetchCustomer = async () => {
-    const response = await fetch(
-      `${process.env.NEXT_PUBLIC_API_URL}/get_customer/${customerId}`
-    );
+    const response = await fetch(API_ENDPOINTS.CUSTOMER(customerId));
     if (response.ok) {
       const data = await response.json();
       setCustomer(data);
@@ -99,9 +98,7 @@ export default function CustomerStats() {
   };
 
   const fetchWeightHistory = async () => {
-    const response = await fetch(
-      `${process.env.NEXT_PUBLIC_API_URL}/get_weight_history/${customerId}?limit=30`
-    );
+    const response = await fetch(API_ENDPOINTS.WEIGHT_HISTORY(customerId, 30));
     if (response.ok) {
       const data = await response.json();
       setWeightHistory(data);
@@ -111,18 +108,14 @@ export default function CustomerStats() {
   const fetchTrainingSessions = async () => {
     const response = await fetch(
       `${process.env.NEXT_PUBLIC_API_URL}/get_training_sessions/${customerId}?limit=30`
-    );
-    if (response.ok) {
-      const data = await response.json();
+    );API_ENDPOINTS.TRAINING_SESSIONS(customerId, 30)  const data = await response.json();
       setTrainingSessions(data);
       calculateTrainingStats(data);
     }
   };
 
   const fetchMealRecords = async () => {
-    const response = await fetch(
-      `${process.env.NEXT_PUBLIC_API_URL}/get_meal_records/${customerId}?limit=30`
-    );
+    const mealResponse = await fetch(API_ENDPOINTS.MEAL_RECORDS(customerId, undefined, undefined, 30));
     if (response.ok) {
       const data = await response.json();
       setMealRecords(data);
@@ -131,9 +124,7 @@ export default function CustomerStats() {
   };
 
   const fetchNutritionGoal = async () => {
-    const response = await fetch(
-      `${process.env.NEXT_PUBLIC_API_URL}/get_nutrition_goal/${customerId}`
-    );
+    const goalResponse = await fetch(API_ENDPOINTS.NUTRITION_GOAL(customerId));
     if (response.ok) {
       const data = await response.json();
       setNutritionGoal(data);

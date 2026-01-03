@@ -4,6 +4,7 @@ import { useRouter, useParams } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
 import { useAuth } from "@/hooks/useAuth";
+import { API_ENDPOINTS } from "@/constants/api";
 import { toast, TOAST_DURATION } from "@/utils/toast";
 import {
   SUCCESS_MESSAGES,
@@ -38,9 +39,7 @@ export default function NutritionGoalSetting() {
 
   const fetchNutritionGoal = async () => {
     try {
-      const response = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/get_nutrition_goal/${customerId}`
-      );
+      const response = await fetch(API_ENDPOINTS.NUTRITION_GOAL(customerId));
       if (response.ok) {
         const data = await response.json();
         setTargetCalories(data.target_calories.toString());
@@ -62,9 +61,7 @@ export default function NutritionGoalSetting() {
     }
 
     try {
-      const response = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/set_nutrition_goal/${customerId}`,
-        {
+      const response = await fetch(API_ENDPOINTS.SET_NUTRITION_GOAL(customerId), {
           method: "POST",
           headers: {
             "Content-Type": "application/json",

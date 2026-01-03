@@ -3,6 +3,8 @@ import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { useAuth } from "@/hooks/useAuth";
+import { API_ENDPOINTS } from "@/constants/api";
+import { toast } from "@/utils/toast";
 
 interface Message {
   role: "user" | "assistant";
@@ -29,15 +31,10 @@ export default function AiChat() {
     setLoading(true);
 
     try {
-      console.log(
-        "Sending request to:",
-        `${process.env.NEXT_PUBLIC_API_URL}/ai_chat`
-      );
+      console.log("Sending request to:", API_ENDPOINTS.AI_CHAT);
       console.log("Message:", input);
 
-      const response = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/ai_chat`,
-        {
+      const response = await fetch(API_ENDPOINTS.AI_CHAT, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ message: input }),
@@ -58,11 +55,11 @@ export default function AiChat() {
       } else {
         const error = await response.json();
         console.error("Error response:", error);
-        alert(`エラー: ${error.error}`);
+        toast.error(`エラー: ${error.error}`);
       }
     } catch (error) {
       console.error("Network error details:", error);
-      alert("ネットワークエラーが発生しました。");
+      toast.error("ネットワークエラーが発生しました。");
     } finally {
       setLoading(false);
     }

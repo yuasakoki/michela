@@ -4,6 +4,7 @@ import { useRouter, useParams } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
 import { useAuth } from "@/hooks/useAuth";
+import { API_ENDPOINTS } from "@/constants/api";
 import { toast, TOAST_DURATION } from "@/utils/toast";
 import {
   SUCCESS_MESSAGES,
@@ -57,9 +58,7 @@ export default function NewMealRecord() {
 
   const fetchFoodPresets = async () => {
     try {
-      const response = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/get_food_presets`
-      );
+      const response = await fetch(API_ENDPOINTS.FOOD_PRESETS);
       if (response.ok) {
         const data = await response.json();
         setFoodPresets(data);
@@ -138,9 +137,7 @@ export default function NewMealRecord() {
     }
 
     try {
-      const response = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/add_meal_record`,
-        {
+      const response = await fetch(API_ENDPOINTS.ADD_MEAL_RECORD, {
           method: "POST",
           headers: {
             "Content-Type": "application/json",

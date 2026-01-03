@@ -8,6 +8,7 @@ import WeightChart from "@/components/WeightChart";
 import TrainingVolumeChart from "@/components/TrainingVolumeChart";
 import NutritionChart from "@/components/NutritionChart";
 import { toast, TOAST_DURATION } from "@/utils/toast";
+import { API_ENDPOINTS } from "@/constants/api";
 import {
   SUCCESS_MESSAGES,
   ERROR_MESSAGES,
@@ -86,9 +87,7 @@ export default function CustomerDetail() {
   useEffect(() => {
     const fetchCustomer = async () => {
       try {
-        const response = await fetch(
-          `${process.env.NEXT_PUBLIC_API_URL}/get_customer/${id}`
-        );
+        const response = await fetch(API_ENDPOINTS.CUSTOMER(id));
         if (response.ok) {
           const data = await response.json();
           setCustomer(data);
@@ -105,9 +104,7 @@ export default function CustomerDetail() {
 
     const fetchWeightHistory = async () => {
       try {
-        const response = await fetch(
-          `${process.env.NEXT_PUBLIC_API_URL}/get_weight_history/${id}?limit=5`
-        );
+        const response = await fetch(API_ENDPOINTS.WEIGHT_HISTORY(id, 5));
         if (response.ok) {
           const data = await response.json();
           setWeightHistory(data);
@@ -121,7 +118,7 @@ export default function CustomerDetail() {
       try {
         // 体重履歴（グラフ用・30日分）
         const weightChartResponse = await fetch(
-          `${process.env.NEXT_PUBLIC_API_URL}/get_weight_history/${id}?limit=30`
+API_ENDPOINTS.WEIGHT_HISTORY(id, 30)
         );
         if (weightChartResponse.ok) {
           const weightData = await weightChartResponse.json();
@@ -135,7 +132,7 @@ export default function CustomerDetail() {
 
         // トレーニングセッション取得
         const trainingResponse = await fetch(
-          `${process.env.NEXT_PUBLIC_API_URL}/get_training_sessions/${id}?limit=30`
+API_ENDPOINTS.TRAINING_SESSIONS(id, 30)
         );
         if (trainingResponse.ok) {
           const trainingSessions = await trainingResponse.json();
@@ -176,7 +173,7 @@ export default function CustomerDetail() {
 
         // 食事記録取得
         const mealResponse = await fetch(
-          `${process.env.NEXT_PUBLIC_API_URL}/get_meal_records/${id}?limit=30`
+API_ENDPOINTS.MEAL_RECORDS(id, undefined, undefined, 30)
         );
         if (mealResponse.ok) {
           const mealRecords = await mealResponse.json();
@@ -204,7 +201,7 @@ export default function CustomerDetail() {
 
         // 栄養目標取得
         const goalResponse = await fetch(
-          `${process.env.NEXT_PUBLIC_API_URL}/get_nutrition_goal/${id}`
+API_ENDPOINTS.NUTRITION_GOAL(id)
         );
         if (goalResponse.ok) {
           const goalData = await goalResponse.json();
@@ -234,7 +231,7 @@ export default function CustomerDetail() {
     if (!editedCustomer) return;
     try {
       const response = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/update_customer/${id}`,
+API_ENDPOINTS.UPDATE_CUSTOMER(id),
         {
           method: "PUT",
           headers: { "Content-Type": "application/json" },
@@ -253,9 +250,7 @@ export default function CustomerDetail() {
         setIsEditing(false);
 
         // 体重履歴を再取得
-        const historyResponse = await fetch(
-          `${process.env.NEXT_PUBLIC_API_URL}/get_weight_history/${id}?limit=5`
-        );
+        const historyResponse = await fetch(API_ENDPOINTS.WEIGHT_HISTORY(id, 5));
         if (historyResponse.ok) {
           const historyData = await historyResponse.json();
           setWeightHistory(historyData);
@@ -277,7 +272,7 @@ export default function CustomerDetail() {
     try {
       // 体重履歴を追加
       const historyResponse = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/add_weight_record/${id}`,
+API_ENDPOINTS.ADD_WEIGHT_RECORD(id),
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -289,9 +284,7 @@ export default function CustomerDetail() {
 
       if (historyResponse.ok) {
         // 顧客情報を再取得
-        const customerResponse = await fetch(
-          `${process.env.NEXT_PUBLIC_API_URL}/get_customer/${id}`
-        );
+        const customerResponse = await fetch(API_ENDPOINTS.CUSTOMER(id));
         if (customerResponse.ok) {
           const data = await customerResponse.json();
           setCustomer(data);
@@ -299,9 +292,7 @@ export default function CustomerDetail() {
         }
 
         // 体重履歴を再取得
-        const weightHistoryResponse = await fetch(
-          `${process.env.NEXT_PUBLIC_API_URL}/get_weight_history/${id}?limit=5`
-        );
+        const weightHistoryResponse = await fetch(API_ENDPOINTS.WEIGHT_HISTORY(id, 5));
         if (weightHistoryResponse.ok) {
           const historyData = await weightHistoryResponse.json();
           setWeightHistory(historyData);
@@ -324,7 +315,7 @@ export default function CustomerDetail() {
   const handleDeleteConfirm = async () => {
     try {
       const response = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/delete_customer/${id}`,
+API_ENDPOINTS.DELETE_CUSTOMER(id),
         {
           method: "DELETE",
         }

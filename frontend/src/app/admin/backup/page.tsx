@@ -2,6 +2,7 @@
 import React, { useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
+import { API_ENDPOINTS } from "@/constants/api";
 
 export default function BackupPage() {
   const [loading, setLoading] = useState(false);
@@ -12,9 +13,7 @@ export default function BackupPage() {
     setLoading(true);
     setMessage("");
     try {
-      const response = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/backup_all`
-      );
+      const response = await fetch(API_ENDPOINTS.BACKUP_ALL);
       if (response.ok) {
         const data = await response.json();
 
@@ -63,9 +62,7 @@ export default function BackupPage() {
       const fileContent = await file.text();
       const backupData = JSON.parse(fileContent);
 
-      const response = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/restore_backup`,
-        {
+      const response = await fetch(API_ENDPOINTS.RESTORE_BACKUP, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(backupData),

@@ -5,6 +5,7 @@ import Image from "next/image";
 import { useAuth } from "@/hooks/useAuth";
 import { useRouter } from "next/navigation";
 import { toast, TOAST_DURATION } from "@/utils/toast";
+import { API_ENDPOINTS } from "@/constants/api";
 import {
   SUCCESS_MESSAGES,
   ERROR_MESSAGES,
@@ -28,23 +29,20 @@ export default function CustomerRegist() {
 
   const handleSubmit = async () => {
     try {
-      const response = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/register_customer`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            name,
-            age: Number.parseInt(age),
-            height: Number.parseFloat(height),
-            weight: Number.parseFloat(weight),
-            favorite_food: favoriteFood,
-            completion_date: completionDate,
-          }),
-        }
-      );
+      const response = await fetch(API_ENDPOINTS.REGISTER_CUSTOMER, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          name,
+          age: Number.parseInt(age),
+          height: Number.parseFloat(height),
+          weight: Number.parseFloat(weight),
+          favorite_food: favoriteFood,
+          completion_date: completionDate,
+        }),
+      });
 
       if (response.ok) {
         const result = await response.json();

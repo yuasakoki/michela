@@ -3,6 +3,7 @@ import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { useAuth } from "@/hooks/useAuth";
+import { API_ENDPOINTS } from "@/constants/api";
 
 interface SearchResult {
   pmid: string;
@@ -39,7 +40,7 @@ export default function ResearchSearch() {
 
   const handleSearch = async (newOffset: number = 0) => {
     if (!query.trim()) {
-      alert("検索キーワードを入力してください");
+      toast.warning("検索キーワードを入力してください");
       return;
     }
 
@@ -52,9 +53,7 @@ export default function ResearchSearch() {
     setExpandedPmid(null);
 
     try {
-      const response = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/search_research`,
-        {
+      const response = await fetch(API_ENDPOINTS.SEARCH_RESEARCH, {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
@@ -78,10 +77,10 @@ export default function ResearchSearch() {
           }
         }
       } else {
-        alert("検索に失敗しました");
+        toast.error("検索に失敗しました");
       }
     } catch (err) {
-      alert("ネットワークエラーが発生しました");
+      toast.error("ネットワークエラーが発生しました");
       console.error("Error:", err);
     } finally {
       setLoading(false);
@@ -105,9 +104,7 @@ export default function ResearchSearch() {
     setLoadingSummary(pmid);
 
     try {
-      const response = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/research_summary/${pmid}`
-      );
+      const response = await fetch(API_ENDPOINTS.RESEARCH_SUMMARY(pmid));
 
       if (response.ok) {
         const data = await response.json();
@@ -116,10 +113,10 @@ export default function ResearchSearch() {
           [pmid]: data,
         }));
       } else {
-        alert("要約の取得に失敗しました");
+        toast.error("要約の取得に失敗しました");
       }
     } catch (err) {
-      alert("ネットワークエラーが発生しました");
+      toast.error("ネットワークエラーが発生しました");
       console.error("Error:", err);
     } finally {
       setLoadingSummary(null);

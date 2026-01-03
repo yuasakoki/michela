@@ -5,6 +5,7 @@ import { useParams } from "next/navigation";
 import Image from "next/image";
 import ReactMarkdown from "react-markdown";
 import { useAuth } from "@/hooks/useAuth";
+import { API_ENDPOINTS } from "@/constants/api";
 import { toast, TOAST_DURATION } from "@/utils/toast";
 import {
   SUCCESS_MESSAGES,
@@ -61,9 +62,7 @@ export default function CustomerTraining() {
 
   const fetchCustomer = async () => {
     try {
-      const response = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/get_customer/${customerId}`
-      );
+      const response = await fetch(API_ENDPOINTS.CUSTOMER(customerId));
       if (response.ok) {
         const data = await response.json();
         setCustomer(data);
@@ -75,9 +74,7 @@ export default function CustomerTraining() {
 
   const fetchSessions = async () => {
     try {
-      const response = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/get_training_sessions/${customerId}?limit=20`
-      );
+      const response = await fetch(API_ENDPOINTS.TRAINING_SESSIONS(customerId, 20));
       if (response.ok) {
         const data = await response.json();
         setSessions(data);
@@ -155,9 +152,7 @@ export default function CustomerTraining() {
 
   const handleDelete = async (sessionId: string) => {
     try {
-      const response = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/delete_training_session/${sessionId}`,
-        {
+      const response = await fetch(API_ENDPOINTS.DELETE_TRAINING_SESSION(sessionId), {
           method: "DELETE",
         }
       );
@@ -203,9 +198,7 @@ export default function CustomerTraining() {
     setAiAdvice("");
     setCachedUntil(null);
     try {
-      const response = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/get_training_advice/${customerId}`
-      );
+      const response = await fetch(API_ENDPOINTS.TRAINING_ADVICE(customerId));
       if (response.ok) {
         const data = await response.json();
         setAiAdvice(data.advice);

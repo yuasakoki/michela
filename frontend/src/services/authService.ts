@@ -1,12 +1,12 @@
 import { LoginRequest, LoginResponse, User } from '@/types/user';
+import { API_ENDPOINTS } from '@/constants/api';
 
 const AUTH_TOKEN_KEY = 'michela_auth_token';
 const USER_DATA_KEY = 'michela_user_data';
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://michela.onrender.com';
 
 export const loginApi = async (username: string, password: string): Promise<boolean> => {
     try {
-        const response = await fetch(`${API_URL}/login`, {
+        const response = await fetch(API_ENDPOINTS.LOGIN, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',

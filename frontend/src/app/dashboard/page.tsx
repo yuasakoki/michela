@@ -7,6 +7,7 @@ import { useRole } from "@/hooks/useRole";
 import { logoutApi } from "@/services/authService";
 import { useRouter } from "next/navigation";
 import { toast } from "@/utils/toast";
+import { API_ENDPOINTS } from "@/constants/api";
 
 interface Customer {
   id: string;
@@ -73,9 +74,7 @@ export default function Dashboard() {
   useEffect(() => {
     const fetchCustomers = async () => {
       try {
-        const response = await fetch(
-          `${process.env.NEXT_PUBLIC_API_URL}/get_customers`
-        );
+        const response = await fetch(API_ENDPOINTS.CUSTOMERS);
         if (response.ok) {
           const data = await response.json();
 
@@ -84,7 +83,7 @@ export default function Dashboard() {
             data.map(async (customer: Customer) => {
               try {
                 const weightResponse = await fetch(
-                  `${process.env.NEXT_PUBLIC_API_URL}/get_weight_history/${customer.id}?limit=1000`
+                  API_ENDPOINTS.WEIGHT_HISTORY(customer.id, 1000)
                 );
 
                 if (weightResponse.ok) {
@@ -225,9 +224,7 @@ export default function Dashboard() {
   const fetchResearchArticles = async () => {
     setLoadingResearch(true);
     try {
-      const response = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/get_latest_research`
-      );
+      const response = await fetch(API_ENDPOINTS.LATEST_RESEARCH);
       if (response.ok) {
         const data = await response.json();
         setResearchArticles(data.articles || []);

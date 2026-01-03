@@ -3,7 +3,11 @@
  * APIエンドポイントと共通エラーメッセージを管理
  */
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'https://michela.onrender.com';
+/**
+ * APIベースURL
+ * 環境変数NEXT_PUBLIC_API_URLが設定されていない場合はローカルホストを使用
+ */
+export const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:5000';
 
 /**
  * APIエンドポイント定義
