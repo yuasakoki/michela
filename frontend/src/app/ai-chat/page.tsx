@@ -35,11 +35,10 @@ export default function AiChat() {
       console.log("Message:", input);
 
       const response = await fetch(API_ENDPOINTS.AI_CHAT, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ message: input }),
-        }
-      );
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ message: input }),
+      });
 
       console.log("Response status:", response.status);
       console.log("Response ok:", response.ok);

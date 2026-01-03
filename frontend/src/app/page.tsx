@@ -29,7 +29,7 @@ export default function Home() {
             onChange={(e) => login.setUsername(e.target.value)}
             onKeyPress={handleKeyPress}
             value={login.username}
-            inputMode="latin"
+            inputMode="text"
             autoCapitalize="off"
             autoComplete="username"
             className="border border-gray-300 rounded-lg px-3 py-2"

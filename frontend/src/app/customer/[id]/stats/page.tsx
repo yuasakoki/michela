@@ -107,17 +107,21 @@ export default function CustomerStats() {
 
   const fetchTrainingSessions = async () => {
     const response = await fetch(
-      `${process.env.NEXT_PUBLIC_API_URL}/get_training_sessions/${customerId}?limit=30`
-    );API_ENDPOINTS.TRAINING_SESSIONS(customerId, 30)  const data = await response.json();
+      API_ENDPOINTS.TRAINING_SESSIONS(customerId, 30)
+    );
+    if (response.ok) {
+      const data = await response.json();
       setTrainingSessions(data);
       calculateTrainingStats(data);
     }
   };
 
   const fetchMealRecords = async () => {
-    const mealResponse = await fetch(API_ENDPOINTS.MEAL_RECORDS(customerId, undefined, undefined, 30));
-    if (response.ok) {
-      const data = await response.json();
+    const mealResponse = await fetch(
+      API_ENDPOINTS.MEAL_RECORDS(customerId, undefined, undefined, 30)
+    );
+    if (mealResponse.ok) {
+      const data = await mealResponse.json();
       setMealRecords(data);
       calculateNutritionStats(data);
     }
@@ -125,8 +129,8 @@ export default function CustomerStats() {
 
   const fetchNutritionGoal = async () => {
     const goalResponse = await fetch(API_ENDPOINTS.NUTRITION_GOAL(customerId));
-    if (response.ok) {
-      const data = await response.json();
+    if (goalResponse.ok) {
+      const data = await goalResponse.json();
       setNutritionGoal(data);
     }
   };

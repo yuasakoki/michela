@@ -4,6 +4,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { useAuth } from "@/hooks/useAuth";
 import { API_ENDPOINTS } from "@/constants/api";
+import { toast } from "@/utils/toast";
 
 interface SearchResult {
   pmid: string;
@@ -54,13 +55,12 @@ export default function ResearchSearch() {
 
     try {
       const response = await fetch(API_ENDPOINTS.SEARCH_RESEARCH, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({ query, offset: newOffset }),
-        }
-      );
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ query, offset: newOffset }),
+      });
 
       if (response.ok) {
         const data = await response.json();

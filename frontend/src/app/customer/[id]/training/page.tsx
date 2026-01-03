@@ -74,7 +74,9 @@ export default function CustomerTraining() {
 
   const fetchSessions = async () => {
     try {
-      const response = await fetch(API_ENDPOINTS.TRAINING_SESSIONS(customerId, 20));
+      const response = await fetch(
+        API_ENDPOINTS.TRAINING_SESSIONS(customerId, 20)
+      );
       if (response.ok) {
         const data = await response.json();
         setSessions(data);
@@ -152,7 +154,9 @@ export default function CustomerTraining() {
 
   const handleDelete = async (sessionId: string) => {
     try {
-      const response = await fetch(API_ENDPOINTS.DELETE_TRAINING_SESSION(sessionId), {
+      const response = await fetch(
+        API_ENDPOINTS.DELETE_TRAINING_SESSION(sessionId),
+        {
           method: "DELETE",
         }
       );

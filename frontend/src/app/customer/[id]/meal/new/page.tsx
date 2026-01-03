@@ -12,7 +12,6 @@ import {
   WARNING_MESSAGES,
   TARGET_NAMES,
 } from "@/constants/messages";
-import { toast } from "@/utils/toast";
 
 interface FoodPreset {
   id: string;
@@ -138,19 +137,18 @@ export default function NewMealRecord() {
 
     try {
       const response = await fetch(API_ENDPOINTS.ADD_MEAL_RECORD, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            customer_id: customerId,
-            date: date,
-            meal_type: mealType,
-            foods: foods,
-            notes: notes,
-          }),
-        }
-      );
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          customer_id: customerId,
+          date: date,
+          meal_type: mealType,
+          foods: foods,
+          notes: notes,
+        }),
+      });
 
       if (response.ok) {
         toast.success(

@@ -61,7 +61,9 @@ export default function NutritionGoalSetting() {
     }
 
     try {
-      const response = await fetch(API_ENDPOINTS.SET_NUTRITION_GOAL(customerId), {
+      const response = await fetch(
+        API_ENDPOINTS.SET_NUTRITION_GOAL(customerId),
+        {
           method: "POST",
           headers: {
             "Content-Type": "application/json",

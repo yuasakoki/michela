@@ -99,7 +99,9 @@ export default function MealHistory() {
 
   const fetchMealRecords = async () => {
     try {
-      const response = await fetch(API_ENDPOINTS.MEAL_RECORDS(customerId, undefined, undefined, 50));
+      const response = await fetch(
+        API_ENDPOINTS.MEAL_RECORDS(customerId, undefined, undefined, 50)
+      );
       if (response.ok) {
         const data = await response.json();
         setRecords(data);
@@ -116,7 +118,9 @@ export default function MealHistory() {
 
   const fetchDailySummary = async (date: string) => {
     try {
-      const response = await fetch(API_ENDPOINTS.DAILY_NUTRITION(customerId, date));
+      const response = await fetch(
+        API_ENDPOINTS.DAILY_NUTRITION(customerId, date)
+      );
       if (response.ok) {
         const data = await response.json();
         setDailySummary(data);
@@ -141,9 +145,8 @@ export default function MealHistory() {
   const handleDelete = async (recordId: string) => {
     try {
       const response = await fetch(API_ENDPOINTS.DELETE_MEAL_RECORD(recordId), {
-          method: "DELETE",
-        }
-      );
+        method: "DELETE",
+      });
       if (response.ok) {
         toast.success(SUCCESS_MESSAGES.DELETED());
         setDeleteId(null);

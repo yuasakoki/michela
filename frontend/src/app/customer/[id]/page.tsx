@@ -118,7 +118,7 @@ export default function CustomerDetail() {
       try {
         // 体重履歴（グラフ用・30日分）
         const weightChartResponse = await fetch(
-API_ENDPOINTS.WEIGHT_HISTORY(id, 30)
+          API_ENDPOINTS.WEIGHT_HISTORY(id, 30)
         );
         if (weightChartResponse.ok) {
           const weightData = await weightChartResponse.json();
@@ -132,7 +132,7 @@ API_ENDPOINTS.WEIGHT_HISTORY(id, 30)
 
         // トレーニングセッション取得
         const trainingResponse = await fetch(
-API_ENDPOINTS.TRAINING_SESSIONS(id, 30)
+          API_ENDPOINTS.TRAINING_SESSIONS(id, 30)
         );
         if (trainingResponse.ok) {
           const trainingSessions = await trainingResponse.json();
@@ -173,7 +173,7 @@ API_ENDPOINTS.TRAINING_SESSIONS(id, 30)
 
         // 食事記録取得
         const mealResponse = await fetch(
-API_ENDPOINTS.MEAL_RECORDS(id, undefined, undefined, 30)
+          API_ENDPOINTS.MEAL_RECORDS(id, undefined, undefined, 30)
         );
         if (mealResponse.ok) {
           const mealRecords = await mealResponse.json();
@@ -200,9 +200,7 @@ API_ENDPOINTS.MEAL_RECORDS(id, undefined, undefined, 30)
         }
 
         // 栄養目標取得
-        const goalResponse = await fetch(
-API_ENDPOINTS.NUTRITION_GOAL(id)
-        );
+        const goalResponse = await fetch(API_ENDPOINTS.NUTRITION_GOAL(id));
         if (goalResponse.ok) {
           const goalData = await goalResponse.json();
           setNutritionGoal(goalData);
@@ -230,27 +228,26 @@ API_ENDPOINTS.NUTRITION_GOAL(id)
   const handleSave = async () => {
     if (!editedCustomer) return;
     try {
-      const response = await fetch(
-API_ENDPOINTS.UPDATE_CUSTOMER(id),
-        {
-          method: "PUT",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            name: editedCustomer.name,
-            age: editedCustomer.age,
-            height: editedCustomer.height,
-            weight: editedCustomer.weight,
-            favorite_food: editedCustomer.favorite_food,
-            completion_date: editedCustomer.completion_date,
-          }),
-        }
-      );
+      const response = await fetch(API_ENDPOINTS.UPDATE_CUSTOMER(id), {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: editedCustomer.name,
+          age: editedCustomer.age,
+          height: editedCustomer.height,
+          weight: editedCustomer.weight,
+          favorite_food: editedCustomer.favorite_food,
+          completion_date: editedCustomer.completion_date,
+        }),
+      });
       if (response.ok) {
         setCustomer(editedCustomer);
         setIsEditing(false);
 
         // 体重履歴を再取得
-        const historyResponse = await fetch(API_ENDPOINTS.WEIGHT_HISTORY(id, 5));
+        const historyResponse = await fetch(
+          API_ENDPOINTS.WEIGHT_HISTORY(id, 5)
+        );
         if (historyResponse.ok) {
           const historyData = await historyResponse.json();
           setWeightHistory(historyData);
@@ -271,16 +268,13 @@ API_ENDPOINTS.UPDATE_CUSTOMER(id),
 
     try {
       // 体重履歴を追加
-      const historyResponse = await fetch(
-API_ENDPOINTS.ADD_WEIGHT_RECORD(id),
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            weight: selectedWeight,
-          }),
-        }
-      );
+      const historyResponse = await fetch(API_ENDPOINTS.ADD_WEIGHT_RECORD(id), {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          weight: selectedWeight,
+        }),
+      });
 
       if (historyResponse.ok) {
         // 顧客情報を再取得
@@ -292,7 +286,9 @@ API_ENDPOINTS.ADD_WEIGHT_RECORD(id),
         }
 
         // 体重履歴を再取得
-        const weightHistoryResponse = await fetch(API_ENDPOINTS.WEIGHT_HISTORY(id, 5));
+        const weightHistoryResponse = await fetch(
+          API_ENDPOINTS.WEIGHT_HISTORY(id, 5)
+        );
         if (weightHistoryResponse.ok) {
           const historyData = await weightHistoryResponse.json();
           setWeightHistory(historyData);
@@ -314,12 +310,9 @@ API_ENDPOINTS.ADD_WEIGHT_RECORD(id),
 
   const handleDeleteConfirm = async () => {
     try {
-      const response = await fetch(
-API_ENDPOINTS.DELETE_CUSTOMER(id),
-        {
-          method: "DELETE",
-        }
-      );
+      const response = await fetch(API_ENDPOINTS.DELETE_CUSTOMER(id), {
+        method: "DELETE",
+      });
 
       if (response.ok) {
         toast.success(

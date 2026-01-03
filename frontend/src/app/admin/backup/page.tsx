@@ -63,11 +63,10 @@ export default function BackupPage() {
       const backupData = JSON.parse(fileContent);
 
       const response = await fetch(API_ENDPOINTS.RESTORE_BACKUP, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(backupData),
-        }
-      );
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(backupData),
+      });
 
       if (response.ok) {
         const result = await response.json();
