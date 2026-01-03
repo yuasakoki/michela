@@ -36,8 +36,13 @@ def initialize_firebase(environment='production'):
     # Load credentials
     if 'GOOGLE_CREDENTIALS' in os.environ:
         # From environment variable (production/staging)
-        cred_dict = json.loads(os.environ['GOOGLE_CREDENTIALS'])
-        cred = credentials.Certificate(cred_dict)
+        try:
+            cred_dict = json.loads(os.environ['GOOGLE_CREDENTIALS'])
+            cred = credentials.Certificate(cred_dict)
+        except json.JSONDecodeError as e:
+            raise ValueError(
+                f"Invalid JSON in GOOGLE_CREDENTIALS environment variable: {e}"
+            )
     else:
         # From file (local development)
         # Look for service account key file with pattern michela-*.json

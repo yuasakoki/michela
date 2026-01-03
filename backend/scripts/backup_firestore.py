@@ -37,8 +37,13 @@ def initialize_firebase(environment='production'):
     # Load credentials
     if 'GOOGLE_CREDENTIALS' in os.environ:
         # From environment variable (production/staging)
-        cred_dict = json.loads(os.environ['GOOGLE_CREDENTIALS'])
-        cred = credentials.Certificate(cred_dict)
+        try:
+            cred_dict = json.loads(os.environ['GOOGLE_CREDENTIALS'])
+            cred = credentials.Certificate(cred_dict)
+        except json.JSONDecodeError as e:
+            raise ValueError(
+                f"Invalid JSON in GOOGLE_CREDENTIALS environment variable: {e}"
+            )
     else:
         # From file (local development)
         # Look for service account key file with pattern michela-*.json
@@ -109,9 +114,10 @@ def get_all_collections(db):
         collection_ref = db.collection(collection_name)
         # Check if collection exists by trying to get first document
         try:
-            docs = collection_ref.limit(1).stream()
-            # More efficient: check if at least one document exists
-            if next(docs, None) is not None:
+            # Create a new iterator for each check
+            docs_iterator = collection_ref.limit(1).stream()
+            first_doc = next(docs_iterator, None)
+            if first_doc is not None:
                 existing_collections.append(collection_name)
         except Exception as e:
             print(f"  ! Warning: Could not access collection '{collection_name}': {e}")
