@@ -16,7 +16,7 @@ load_dotenv(dotenv_path=env_path)
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..'))
 
 # サービスモジュールのインポート（.env読み込み後）
-from app.services import customer_service, weight_service, ai_service, research_service, training_service, meal_service
+from app.services import customer_service, weight_service, ai_service, research_service, training_service, meal_service, user_service
 
 # Firebase認証情報の読み込み（ローカル/本番環境対応）
 if 'GOOGLE_CREDENTIALS' in os.environ:
@@ -31,6 +31,8 @@ else:
 if not firebase_admin._apps:
     firebase_admin.initialize_app(cred)
     print("Firebase initialized")
+    # デフォルトユーザーを初期化（初回のみ）
+    user_service.initialize_default_users()
 
 app = Flask(__name__)
 
@@ -46,6 +48,76 @@ CORS(app,
          re.compile(r"^https://michela-.*\.vercel\.app$")
      ],
      supports_credentials=True)
+
+
+# ==================== 認証・ユーザー管理エンドポイント ====================
+
+@app.route('/login', methods=['POST'])
+def login():
+    """ユーザーログイン"""
+    data = request.json
+    if not data or 'username' not in data or 'password' not in data:
+        return jsonify({"error": "Username and password are required"}), 400
+    
+    user_data, error = user_service.authenticate_user(data['username'], data['password'])
+    if error:
+        return jsonify({'error': error}), 401
+    
+    return jsonify({
+        "message": "Login successful",
+        "user": user_data
+    }), 200
+
+
+@app.route('/get_users', methods=['GET'])
+def get_users():
+    """全ユーザーを取得（管理者用）"""
+    users = user_service.get_all_users()
+    return jsonify(users), 200
+
+
+@app.route('/create_user', methods=['POST'])
+def create_user_endpoint():
+    """新しいユーザーを作成（管理者用）"""
+    data = request.json
+    if not data or 'username' not in data or 'password' not in data:
+        return jsonify({"error": "Username and password are required"}), 400
+    
+    user_id, error = user_service.create_user(
+        username=data['username'],
+        password=data['password'],
+        role=data.get('role', 0),
+        email=data.get('email')
+    )
+    
+    if error:
+        return jsonify({'error': error}), 400
+    
+    return jsonify({"message": "User created", "id": user_id}), 201
+
+
+@app.route('/update_user/<user_id>', methods=['PUT'])
+def update_user_endpoint(user_id):
+    """ユーザー情報を更新（管理者用）"""
+    data = request.json
+    if not data:
+        return jsonify({"error": "No data provided"}), 400
+    
+    error = user_service.update_user(user_id, data)
+    if error:
+        return jsonify({'error': error}), 400
+    
+    return jsonify({"message": "User updated"}), 200
+
+
+@app.route('/delete_user/<user_id>', methods=['DELETE'])
+def delete_user_endpoint(user_id):
+    """ユーザーを削除（管理者用）"""
+    error = user_service.delete_user(user_id)
+    if error:
+        return jsonify({'error': error}), 500
+    
+    return jsonify({"message": "User deleted"}), 200
 
 
 # ==================== 顧客管理エンドポイント ====================
@@ -162,28 +234,35 @@ def get_training_advice(customer_id):
         if not sessions:
             return jsonify({"advice": "まだトレーニング記録がありません。まずはトレーニングを記録してみましょう！"}), 200
         
-        # セッション情報をテキストにまとめる
-        training_summary = "【最近のトレーニング記録】\n"
-        for session in sessions[:5]:  # 最新5件
-            training_summary += f"\n日付: {session.get('date', '')}\n"
-            training_summary += f"所要時間: {session.get('duration', 0)}分\n"
-            for exercise in session.get('exercises', []):
-                training_summary += f"- {exercise.get('name', '')}: "
-                sets_info = []
-                for set_data in exercise.get('sets', []):
-                    sets_info.append(f"{set_data.get('reps', 0)}回×{set_data.get('weight', 0)}kg")
-                training_summary += ", ".join(sets_info) + "\n"
+        # 最新1件（今回）と過去3件をまとめる
+        latest_session = sessions[0] if sessions else None
+        past_sessions = sessions[1:4] if len(sessions) > 1 else []
         
-        # AIにアドバイスを求める
-        prompt = f"""{training_summary}
+        # 今回のトレーニング
+        current_summary = "Today:\n"
+        if latest_session:
+            current_summary += f"{latest_session.get('date', '')}\n"
+            for ex in latest_session.get('exercises', []):
+                sets = ", ".join([f"{s.get('reps')}×{s.get('weight')}kg" for s in ex.get('sets', [])])
+                current_summary += f"- {ex.get('exercise_name')}: {sets}\n"
+        
+        # 過去3回の簡潔な記録（進捗比較用）
+        past_summary = "Past 3 sessions:\n"
+        for session in past_sessions:
+            date = session.get('date', '')
+            for ex in session.get('exercises', []):
+                # 最大重量を取得
+                max_weight = max([s.get('weight', 0) for s in ex.get('sets', [])]) if ex.get('sets') else 0
+                sets_count = len(ex.get('sets', []))
+                past_summary += f"{date}: {ex.get('exercise_name')} {sets_count}sets, max {max_weight}kg\n"
+        
+        # AIにアドバイスを求める（英語プロンプト、日本語回答）
+        prompt = f"""{current_summary}
+{past_summary}
 
-上記のトレーニング記録を分析して、以下の観点から具体的なアドバイスをしてください：
-1. トレーニング頻度や種目のバランス
-2. 重量やレップ数の進捗状況
-3. 次回のトレーニングで改善できるポイント
-4. 怪我を防ぐための注意点
-
-アドバイスは簡潔に3-5個のポイントでまとめてください。"""
+Context: Warmed up, trainer support, intermediate level, 0kg=bodyweight.
+Compare with past 3 sessions, evaluate progress in 3 points, and advise for next session.
+Please respond in Japanese."""
         
         advice_text, error, cached_until = ai_service.chat_with_ai(prompt)
         if error:
@@ -226,42 +305,31 @@ def get_meal_advice(customer_id):
             daily_nutrition[date]['carbs'] += record.get('total_carbs', 0)
             daily_nutrition[date]['count'] += 1
         
-        # サマリーをテキスト化
-        meal_summary = "【最近の食事記録（日別）】\n"
+        # 直近3日分と平均
         sorted_dates = sorted(daily_nutrition.keys(), reverse=True)[:7]
-        
         total_days = len(sorted_dates)
+        
+        # 最新3日分の記録
+        recent_summary = "【直近3日】\n"
+        for date in sorted_dates[:3]:
+            day_data = daily_nutrition[date]
+            recent_summary += f"{date}: {round(day_data['calories'])}kcal (P{round(day_data['protein'])}g/F{round(day_data['fat'])}g/C{round(day_data['carbs'])}g)\n"
+        
+        # 7日間平均
         avg_calories = sum(daily_nutrition[d]['calories'] for d in sorted_dates) / total_days if total_days > 0 else 0
         avg_protein = sum(daily_nutrition[d]['protein'] for d in sorted_dates) / total_days if total_days > 0 else 0
         avg_fat = sum(daily_nutrition[d]['fat'] for d in sorted_dates) / total_days if total_days > 0 else 0
         avg_carbs = sum(daily_nutrition[d]['carbs'] for d in sorted_dates) / total_days if total_days > 0 else 0
         
-        for date in sorted_dates:
-            day_data = daily_nutrition[date]
-            meal_summary += f"\n{date}: {round(day_data['calories'])}kcal (P:{round(day_data['protein'])}g, F:{round(day_data['fat'])}g, C:{round(day_data['carbs'])}g) - {day_data['count']}食\n"
+        avg_summary = f"\n【7日平均】\n{round(avg_calories)}kcal (P{round(avg_protein)}g/F{round(avg_fat)}g/C{round(avg_carbs)}g)\n"
         
-        meal_summary += f"\n【平均（{total_days}日間）】\n"
-        meal_summary += f"カロリー: {round(avg_calories)}kcal\n"
-        meal_summary += f"タンパク質: {round(avg_protein)}g\n"
-        meal_summary += f"脂質: {round(avg_fat)}g\n"
-        meal_summary += f"炭水化物: {round(avg_carbs)}g\n"
+        # 目標との比較
+        goal_summary = f"\n【目標】\n{goal.get('target_calories', 0)}kcal (P{goal.get('target_protein', 0)}g/F{goal.get('target_fat', 0)}g/C{goal.get('target_carbs', 0)}g)\n"
         
-        meal_summary += f"\n【目標】\n"
-        meal_summary += f"カロリー: {goal.get('target_calories', 0)}kcal\n"
-        meal_summary += f"タンパク質: {goal.get('target_protein', 0)}g\n"
-        meal_summary += f"脂質: {goal.get('target_fat', 0)}g\n"
-        meal_summary += f"炭水化物: {goal.get('target_carbs', 0)}g\n"
-        
-        # AIにアドバイスを求める
-        prompt = f"""{meal_summary}
-
-上記の食事記録と目標を分析して、以下の観点から具体的なアドバイスをしてください：
-1. 目標に対する達成度（カロリー、PFCバランス）
-2. 栄養バランスの改善点
-3. 次の食事で意識すべきこと
-4. おすすめの食品や食事のタイミング
-
-アドバイスは簡潔に3-5個のポイントでまとめてください。"""
+        # AIにアドバイスを求める（簡潔なプロンプト）
+        prompt = f"""{recent_summary}{avg_summary}{goal_summary}
+前提：目標値設定済。
+直近3日と平均を踏まえ、目標達成度とPFCバランスの総評3点。"""
         
         advice_text, error, cached_until = ai_service.chat_with_ai(prompt)
         if error:
@@ -327,6 +395,36 @@ def get_exercise_presets():
     """トレーニング種目プリセット一覧を取得"""
     presets = training_service.get_exercise_presets()
     return jsonify(presets), 200
+
+
+@app.route('/add_exercise_preset', methods=['POST'])
+def add_exercise_preset():
+    """カスタム種目を追加"""
+    data = request.json
+    if not data or 'name' not in data:
+        return jsonify({"error": "Name is required"}), 400
+    
+    if 'category' not in data:
+        return jsonify({"error": "Category is required"}), 400
+    
+    exercise_id, error = training_service.add_exercise_preset(
+        data['name'],
+        data['category']
+    )
+    if error:
+        return jsonify({'error': error}), 400
+    
+    return jsonify({"message": "ok", "id": exercise_id}), 201
+
+
+@app.route('/delete_exercise_preset/<exercise_id>', methods=['DELETE'])
+def delete_exercise_preset(exercise_id):
+    """カスタム種目を削除"""
+    error = training_service.delete_exercise_preset(exercise_id)
+    if error:
+        return jsonify({'error': error}), 400
+    
+    return jsonify({"message": "ok"}), 200
 
 
 @app.route('/add_training_session', methods=['POST'])
@@ -502,6 +600,127 @@ def set_nutrition_goal(customer_id):
     try:
         goal = meal_service.set_nutrition_goal(customer_id, data)
         return jsonify(goal), 200
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+# ==================== バックアップ・復元エンドポイント ====================
+
+@app.route('/backup_all', methods=['GET'])
+def backup_all():
+    """全データをJSON形式でバックアップ"""
+    try:
+        from datetime import datetime
+        
+        # 全コレクションからデータを取得
+        backup_data = {
+            'timestamp': datetime.now().isoformat(),
+            'version': '1.0',
+            'collections': {
+                'customers': customer_service.get_all_customers(),
+                'weight_history': [],
+                'training_sessions': [],
+                'meal_records': [],
+                'nutrition_goals': []
+            }
+        }
+        
+        # 全顧客の関連データを取得
+        customers = customer_service.get_all_customers()
+        for customer in customers:
+            customer_id = customer['id']
+            
+            # 体重履歴
+            weight_history = weight_service.get_weight_history(customer_id, limit=1000)
+            for record in weight_history:
+                record['customer_id'] = customer_id
+            backup_data['collections']['weight_history'].extend(weight_history)
+            
+            # トレーニングセッション
+            training_sessions = training_service.get_training_sessions_by_customer(customer_id, limit=1000)
+            backup_data['collections']['training_sessions'].extend(training_sessions)
+            
+            # 食事記録
+            meal_records = meal_service.get_meal_records_by_customer(customer_id, limit=1000)
+            backup_data['collections']['meal_records'].extend(meal_records)
+            
+            # 栄養目標
+            goal, _ = meal_service.get_nutrition_goal(customer_id)
+            if goal:
+                backup_data['collections']['nutrition_goals'].append(goal)
+        
+        return jsonify(backup_data), 200
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/restore_backup', methods=['POST'])
+def restore_backup():
+    """バックアップデータを復元"""
+    try:
+        data = request.json
+        if not data or 'collections' not in data:
+            return jsonify({"error": "Invalid backup data"}), 400
+        
+        collections = data['collections']
+        restored_counts = {
+            'customers': 0,
+            'weight_history': 0,
+            'training_sessions': 0,
+            'meal_records': 0,
+            'nutrition_goals': 0
+        }
+        
+        # 顧客データを復元
+        if 'customers' in collections:
+            for customer_data in collections['customers']:
+                customer_id = customer_data.get('id')
+                if customer_id:
+                    # IDを除外してデータを更新
+                    update_data = {k: v for k, v in customer_data.items() if k != 'id'}
+                    db.collection('customer').document(customer_id).set(update_data)
+                    restored_counts['customers'] += 1
+        
+        # 体重履歴を復元
+        if 'weight_history' in collections:
+            for record in collections['weight_history']:
+                record_id = record.get('id')
+                if record_id:
+                    update_data = {k: v for k, v in record.items() if k != 'id'}
+                    db.collection('weight_history').document(record_id).set(update_data)
+                    restored_counts['weight_history'] += 1
+        
+        # トレーニングセッションを復元
+        if 'training_sessions' in collections:
+            for session in collections['training_sessions']:
+                session_id = session.get('id')
+                if session_id:
+                    update_data = {k: v for k, v in session.items() if k != 'id'}
+                    db.collection('training_sessions').document(session_id).set(update_data)
+                    restored_counts['training_sessions'] += 1
+        
+        # 食事記録を復元
+        if 'meal_records' in collections:
+            for record in collections['meal_records']:
+                record_id = record.get('id')
+                if record_id:
+                    update_data = {k: v for k, v in record.items() if k != 'id'}
+                    db.collection('meal_records').document(record_id).set(update_data)
+                    restored_counts['meal_records'] += 1
+        
+        # 栄養目標を復元
+        if 'nutrition_goals' in collections:
+            for goal in collections['nutrition_goals']:
+                customer_id = goal.get('customer_id')
+                if customer_id:
+                    update_data = {k: v for k, v in goal.items() if k != 'customer_id'}
+                    db.collection('nutrition_goals').document(customer_id).set(update_data)
+                    restored_counts['nutrition_goals'] += 1
+        
+        return jsonify({
+            "message": "Backup restored successfully",
+            "restored_counts": restored_counts
+        }), 200
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 

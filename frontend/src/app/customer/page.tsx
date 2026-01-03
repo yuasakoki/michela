@@ -3,9 +3,17 @@ import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { useAuth } from "@/hooks/useAuth";
+import { useRouter } from "next/navigation";
+import { toast, TOAST_DURATION } from "@/utils/toast";
+import {
+  SUCCESS_MESSAGES,
+  ERROR_MESSAGES,
+  TARGET_NAMES,
+} from "@/constants/messages";
 
 export default function CustomerRegist() {
   useAuth(); // 認証チェック
+  const router = useRouter();
 
   useEffect(() => {
     document.title = "顧客登録 | MII Fit";
@@ -40,7 +48,10 @@ export default function CustomerRegist() {
 
       if (response.ok) {
         const result = await response.json();
-        alert(`登録が完了しました！ ID: ${result.id}`);
+        toast.success(
+          SUCCESS_MESSAGES.REGISTERED(TARGET_NAMES.CUSTOMER),
+          TOAST_DURATION.SHORT
+        );
         // フォームをリセット
         setName("");
         setAge("");
@@ -48,12 +59,22 @@ export default function CustomerRegist() {
         setWeight("");
         setFavoriteFood("");
         setCompletionDate("");
+        // ダッシュボードに移動
+        setTimeout(() => {
+          router.push("/dashboard");
+        }, TOAST_DURATION.SHORT);
       } else {
         const error = await response.json();
-        alert(`登録に失敗しました: ${error.error}`);
+        toast.error(
+          ERROR_MESSAGES.REGISTRATION_FAILED(
+            TARGET_NAMES.CUSTOMER,
+            error.error
+          ),
+          TOAST_DURATION.LONG
+        );
       }
     } catch (error) {
-      alert("ネットワークエラーが発生しました。");
+      toast.error("ネットワークエラーが発生しました");
       console.error("Error:", error);
     }
   };

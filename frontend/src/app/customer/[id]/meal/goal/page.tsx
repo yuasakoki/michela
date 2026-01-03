@@ -4,6 +4,13 @@ import { useRouter, useParams } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
 import { useAuth } from "@/hooks/useAuth";
+import { toast, TOAST_DURATION } from "@/utils/toast";
+import {
+  SUCCESS_MESSAGES,
+  ERROR_MESSAGES,
+  WARNING_MESSAGES,
+  TARGET_NAMES,
+} from "@/constants/messages";
 
 interface NutritionGoal {
   customer_id: string;
@@ -50,7 +57,7 @@ export default function NutritionGoalSetting() {
 
   const handleSubmit = async () => {
     if (!targetCalories || !targetProtein || !targetFat || !targetCarbs) {
-      alert("すべての項目を入力してください。");
+      toast.warning(WARNING_MESSAGES.REQUIRED_FIELD("すべての項目"));
       return;
     }
 
@@ -72,14 +79,25 @@ export default function NutritionGoalSetting() {
       );
 
       if (response.ok) {
-        alert("栄養目標を設定しました！");
-        router.push(`/customer/${customerId}/meal`);
+        toast.success(
+          SUCCESS_MESSAGES.CONFIGURED(TARGET_NAMES.NUTRITION_GOAL),
+          TOAST_DURATION.SHORT
+        );
+        setTimeout(() => {
+          router.push(`/customer/${customerId}/meal`);
+        }, TOAST_DURATION.SHORT);
       } else {
         const error = await response.json();
-        alert(`設定に失敗しました: ${error.error}`);
+        toast.error(
+          ERROR_MESSAGES.CONFIGURATION_FAILED(
+            TARGET_NAMES.NUTRITION_GOAL,
+            error.error
+          ),
+          TOAST_DURATION.LONG
+        );
       }
     } catch (error) {
-      alert("ネットワークエラーが発生しました。");
+      toast.error("ネットワークエラーが発生しました");
       console.error("Error:", error);
     }
   };

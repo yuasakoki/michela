@@ -4,6 +4,14 @@ import { useRouter, useParams } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
 import { useAuth } from "@/hooks/useAuth";
+import { toast, TOAST_DURATION } from "@/utils/toast";
+import {
+  SUCCESS_MESSAGES,
+  ERROR_MESSAGES,
+  WARNING_MESSAGES,
+  TARGET_NAMES,
+} from "@/constants/messages";
+import { toast } from "@/utils/toast";
 
 interface FoodPreset {
   id: string;
@@ -125,7 +133,7 @@ export default function NewMealRecord() {
 
   const handleSubmit = async () => {
     if (!date || !mealType || foods.length === 0) {
-      alert("必須項目を入力してください。");
+      toast.warning(WARNING_MESSAGES.REQUIRED_FIELD("必須項目"));
       return;
     }
 
@@ -148,14 +156,25 @@ export default function NewMealRecord() {
       );
 
       if (response.ok) {
-        alert("食事記録を登録しました！");
-        router.push(`/customer/${customerId}/meal`);
+        toast.success(
+          SUCCESS_MESSAGES.REGISTERED(TARGET_NAMES.MEAL_RECORD),
+          TOAST_DURATION.SHORT
+        );
+        setTimeout(() => {
+          router.push(`/customer/${customerId}/meal`);
+        }, TOAST_DURATION.SHORT);
       } else {
         const error = await response.json();
-        alert(`登録に失敗しました: ${error.error}`);
+        toast.error(
+          ERROR_MESSAGES.REGISTRATION_FAILED(
+            TARGET_NAMES.MEAL_RECORD,
+            error.error
+          ),
+          TOAST_DURATION.LONG
+        );
       }
     } catch (error) {
-      alert("ネットワークエラーが発生しました。");
+      toast.error("ネットワークエラーが発生しました");
       console.error("Error:", error);
     }
   };

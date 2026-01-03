@@ -4,6 +4,12 @@ import { useRouter, useParams } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
 import { useAuth } from "@/hooks/useAuth";
+import { toast, TOAST_DURATION } from "@/utils/toast";
+import {
+  SUCCESS_MESSAGES,
+  ERROR_MESSAGES,
+  TARGET_NAMES,
+} from "@/constants/messages";
 
 interface Food {
   food_id: string;
@@ -146,17 +152,17 @@ export default function MealHistory() {
         }
       );
       if (response.ok) {
-        alert("食事記録を削除しました。");
+        toast.success(SUCCESS_MESSAGES.DELETED());
         setDeleteId(null);
         fetchMealRecords();
         if (selectedDate) {
           fetchDailySummary(selectedDate);
         }
       } else {
-        alert("削除に失敗しました。");
+        toast.error(ERROR_MESSAGES.DELETION_FAILED());
       }
     } catch (err) {
-      alert("ネットワークエラーが発生しました。");
+      toast.error("ネットワークエラーが発生しました");
       console.error("Error deleting meal record:", err);
     }
   };
@@ -177,10 +183,13 @@ export default function MealHistory() {
         }
       } else {
         const error = await response.json();
-        alert(`アドバイス取得に失敗しました: ${error.error}`);
+        toast.error(
+          `アドバイス取得に失敗: ${error.error}`,
+          TOAST_DURATION.LONG
+        );
       }
     } catch (err) {
-      alert("ネットワークエラーが発生しました。");
+      toast.error("ネットワークエラーが発生しました");
       console.error("Error fetching advice:", err);
     } finally {
       setLoadingAdvice(false);

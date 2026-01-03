@@ -29,8 +29,69 @@ EXERCISE_PRESETS = [
 
 
 def get_exercise_presets():
-    """トレーニング種目プリセット一覧を取得"""
-    return EXERCISE_PRESETS
+    """トレーニング種目プリセット一覧を取得（Firestore優先）"""
+    db = get_db()
+    
+    # Firestoreからカスタム種目を取得
+    custom_exercises = []
+    docs = db.collection('exercise_presets').stream()
+    for doc in docs:
+        data = doc.to_dict()
+        data['id'] = doc.id
+        custom_exercises.append(data)
+    
+    # デフォルトプリセットとマージ（カスタムを優先）
+    all_exercises = custom_exercises + EXERCISE_PRESETS
+    
+    # 重複を除外（idでユニーク化）
+    seen_ids = set()
+    unique_exercises = []
+    for ex in all_exercises:
+        if ex['id'] not in seen_ids:
+            seen_ids.add(ex['id'])
+            unique_exercises.append(ex)
+    
+    return unique_exercises
+
+
+def add_exercise_preset(name, category='custom'):
+    """カスタム種目を追加"""
+    db = get_db()
+    
+    if not name or not name.strip():
+        return None, '種目名が必要です'
+    
+    if not category or not category.strip():
+        return None, '部位が必要です'
+    
+    # 同じ名前がすでに存在するかチェック
+    existing = db.collection('exercise_presets').where('name', '==', name.strip()).limit(1).get()
+    if len(list(existing)) > 0:
+        return None, '同じ名前の種目がすでに存在します'
+    
+    doc_ref = db.collection('exercise_presets').document()
+    doc_ref.set({
+        'name': name.strip(),
+        'category': category.strip(),
+        'unit': 'kg',
+        'created_at': datetime.now().isoformat()
+    })
+    
+    return doc_ref.id, None
+
+
+def delete_exercise_preset(exercise_id):
+    """カスタム種目を削除（デフォルトプリセットは削除不可）"""
+    db = get_db()
+    
+    # デフォルトプリセットかチェック
+    default_ids = [ex['id'] for ex in EXERCISE_PRESETS]
+    if exercise_id in default_ids:
+        return 'デフォルト種目は削除できません'
+    
+    # Firestoreから削除
+    db.collection('exercise_presets').document(exercise_id).delete()
+    return None
 
 
 def add_training_session(data):

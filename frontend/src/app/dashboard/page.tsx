@@ -3,6 +3,10 @@ import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { useAuth } from "@/hooks/useAuth";
+import { useRole } from "@/hooks/useRole";
+import { logoutApi } from "@/services/authService";
+import { useRouter } from "next/navigation";
+import { toast } from "@/utils/toast";
 
 interface Customer {
   id: string;
@@ -12,6 +16,21 @@ interface Customer {
   weight: number;
   favorite_food: string;
   completion_date: string;
+}
+
+interface WeightRecord {
+  id: string;
+  weight: number;
+  recorded_at: string;
+  note?: string;
+}
+
+interface CustomerWithWeightData extends Customer {
+  firstWeight: number | null;
+  currentWeight: number | null;
+  weightDiff: number | null;
+  daysRemaining: number | null;
+  lastUpdated: string | null;
 }
 
 interface ResearchArticle {
@@ -24,12 +43,24 @@ interface ResearchArticle {
 
 export default function Dashboard() {
   useAuth(); // 認証チェック
+  const { isDeveloper } = useRole(); // 権限チェック
+  const router = useRouter();
 
   useEffect(() => {
     document.title = "ダッシュボード | MII Fit";
   }, []);
 
+  const handleLogout = () => {
+    if (confirm("ログアウトしますか？")) {
+      logoutApi();
+      router.push("/");
+    }
+  };
+
   const [customers, setCustomers] = useState<Customer[]>([]);
+  const [customersWithWeightData, setCustomersWithWeightData] = useState<
+    CustomerWithWeightData[]
+  >([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [sortOption, setSortOption] = useState<string>("");
@@ -47,45 +78,112 @@ export default function Dashboard() {
         );
         if (response.ok) {
           const data = await response.json();
+
+          // 各顧客の体重履歴を取得
+          const customersWithData = await Promise.all(
+            data.map(async (customer: Customer) => {
+              try {
+                const weightResponse = await fetch(
+                  `${process.env.NEXT_PUBLIC_API_URL}/get_weight_history/${customer.id}?limit=1000`
+                );
+
+                if (weightResponse.ok) {
+                  const weightHistory: WeightRecord[] =
+                    await weightResponse.json();
+
+                  // 体重履歴を日付順にソート（古い順）
+                  const sortedHistory = [...weightHistory].sort(
+                    (a, b) =>
+                      new Date(a.recorded_at).getTime() -
+                      new Date(b.recorded_at).getTime()
+                  );
+
+                  const firstWeight =
+                    sortedHistory.length > 0
+                      ? sortedHistory[0].weight
+                      : customer.weight;
+                  const currentWeight =
+                    sortedHistory.length > 0
+                      ? sortedHistory[sortedHistory.length - 1].weight
+                      : customer.weight;
+                  const weightDiff = currentWeight - firstWeight;
+                  const lastUpdated =
+                    sortedHistory.length > 0
+                      ? sortedHistory[sortedHistory.length - 1].recorded_at
+                      : null;
+
+                  // 完了予定日から残り日数を計算
+                  const completionDate = new Date(customer.completion_date);
+                  const today = new Date();
+                  const diffTime = completionDate.getTime() - today.getTime();
+                  const daysRemaining = Math.ceil(
+                    diffTime / (1000 * 60 * 60 * 24)
+                  );
+
+                  return {
+                    ...customer,
+                    firstWeight,
+                    currentWeight,
+                    weightDiff,
+                    daysRemaining,
+                    lastUpdated,
+                  };
+                } else {
+                  // 体重履歴が取得できない場合は登録時の体重を使用
+                  const completionDate = new Date(customer.completion_date);
+                  const today = new Date();
+                  const diffTime = completionDate.getTime() - today.getTime();
+                  const daysRemaining = Math.ceil(
+                    diffTime / (1000 * 60 * 60 * 24)
+                  );
+
+                  return {
+                    ...customer,
+                    firstWeight: customer.weight,
+                    currentWeight: customer.weight,
+                    weightDiff: 0,
+                    daysRemaining,
+                    lastUpdated: null,
+                  };
+                }
+              } catch (error) {
+                // エラー時も登録時の体重を使用
+                const completionDate = new Date(customer.completion_date);
+                const today = new Date();
+                const diffTime = completionDate.getTime() - today.getTime();
+                const daysRemaining = Math.ceil(
+                  diffTime / (1000 * 60 * 60 * 24)
+                );
+
+                return {
+                  ...customer,
+                  firstWeight: customer.weight,
+                  currentWeight: customer.weight,
+                  weightDiff: 0,
+                  daysRemaining,
+                  lastUpdated: null,
+                };
+              }
+            })
+          );
+
+          setCustomersWithWeightData(customersWithData);
           setCustomers(data);
-        } else {
-          setError("データの取得に失敗しました。");
         }
-      } catch (err) {
-        setError("ネットワークエラーが発生しました。");
-        console.error("Error fetching customers:", err);
+      } catch (error) {
+        console.error("Error fetching customers:", error);
+        setError("顧客データの取得に失敗しました");
       } finally {
         setLoading(false);
       }
     };
 
     fetchCustomers();
-    // 最新研究も初回自動取得
-    fetchResearchArticles();
   }, []);
 
-  const fetchResearchArticles = async () => {
-    setLoadingResearch(true);
-    try {
-      const response = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/get_latest_research`
-      );
-      if (response.ok) {
-        const data = await response.json();
-        setResearchArticles(data.articles || []);
-      } else {
-        alert("最新研究の取得に失敗しました。");
-      }
-    } catch (err) {
-      alert("ネットワークエラーが発生しました。");
-      console.error("Error fetching research:", err);
-    } finally {
-      setLoadingResearch(false);
-    }
-  };
-
+  // 顧客リストをソート
   const sortedCustomers = React.useMemo(() => {
-    const sorted = [...customers];
+    const sorted = [...customersWithWeightData];
     if (sortOption === "name-asc") {
       sorted.sort((a, b) => a.name.localeCompare(b.name));
     } else if (sortOption === "name-desc") {
@@ -102,9 +200,13 @@ export default function Dashboard() {
           new Date(b.completion_date).getTime() -
           new Date(a.completion_date).getTime()
       );
+    } else if (sortOption === "weight-diff-asc") {
+      sorted.sort((a, b) => (a.weightDiff || 0) - (b.weightDiff || 0));
+    } else if (sortOption === "weight-diff-desc") {
+      sorted.sort((a, b) => (b.weightDiff || 0) - (a.weightDiff || 0));
     }
     return sorted;
-  }, [customers, sortOption]);
+  }, [customersWithWeightData, sortOption]);
 
   // 研究記事を日付順にソート（新しい順）
   const sortedResearchArticles = React.useMemo(() => {
@@ -118,6 +220,26 @@ export default function Dashboard() {
       "https://www.google.com/search?q=筋トレ+ダイエット+最新研究",
       "_blank"
     );
+  };
+
+  const fetchResearchArticles = async () => {
+    setLoadingResearch(true);
+    try {
+      const response = await fetch(
+        `${process.env.NEXT_PUBLIC_API_URL}/get_latest_research`
+      );
+      if (response.ok) {
+        const data = await response.json();
+        setResearchArticles(data.articles || []);
+      } else {
+        toast.error("最新研究の取得に失敗しました");
+      }
+    } catch (err) {
+      toast.error("ネットワークエラーが発生しました");
+      console.error("Error fetching research:", err);
+    } finally {
+      setLoadingResearch(false);
+    }
   };
 
   if (loading) {
@@ -153,23 +275,27 @@ export default function Dashboard() {
   if (error) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-gray-100">
-        <div className="text-center">
-          <h1 className="text-3xl font-bold text-red-800">{error}</h1>
+        <div className="text-center text-red-600">
+          <p>{error}</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-100 p-4 md:p-8">
-      <div className="max-w-6xl mx-auto">
-        <div className="flex justify-center mb-4 md:mb-6">
+    <div className="flex min-h-screen items-center justify-center bg-gray-100">
+      <div className="bg-white shadow-lg rounded-lg p-6 md:p-8 max-w-7xl w-full mx-2 md:mx-4">
+        <div className="flex justify-center mb-4">
           <Image src="/vercel.svg" alt="logo" width={150} height={150} />
         </div>
-        {/* <h1 className="text-3xl font-bold text-gray-800 mb-6 text-center">
-          メインメニュー
-        </h1> */}
         <div className="text-right mb-4 md:mb-6">
+          {isDeveloper && (
+            <Link href="/admin/backup">
+              <button className="px-4 py-2 md:px-6 md:py-3 bg-gray-600 text-white rounded-lg shadow-md hover:bg-gray-700 transition duration-300 text-sm md:text-base mr-2">
+                🛠️ バックアップ
+              </button>
+            </Link>
+          )}
           <Link href="/research-search">
             <button className="px-4 py-2 md:px-6 md:py-3 bg-purple-600 text-white rounded-lg shadow-md hover:bg-purple-700 transition duration-300 text-sm md:text-base mr-2">
               研究を検索
@@ -206,6 +332,8 @@ export default function Dashboard() {
               <option value="name-desc">氏名降順</option>
               <option value="date-asc">完了予定日昇順</option>
               <option value="date-desc">完了予定日降順</option>
+              <option value="weight-diff-asc">体重差分昇順</option>
+              <option value="weight-diff-desc">体重差分降順</option>
             </select>
           </div>
 
@@ -218,19 +346,22 @@ export default function Dashboard() {
                     氏名
                   </th>
                   <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
-                    年齢
+                    初回体重 (kg)
                   </th>
                   <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
-                    身長 (cm)
+                    現在体重 (kg)
                   </th>
                   <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
-                    体重 (kg)
-                  </th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
-                    好きな食べ物
+                    体重差分 (kg)
                   </th>
                   <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
                     完了予定
+                  </th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
+                    残り日数
+                  </th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
+                    最終更新
                   </th>
                 </tr>
               </thead>
@@ -246,19 +377,62 @@ export default function Dashboard() {
                       </Link>
                     </td>
                     <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-900">
-                      {customer.age}
+                      {customer.firstWeight?.toFixed(1) || "-"}
                     </td>
                     <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-900">
-                      {customer.height}
+                      {customer.currentWeight?.toFixed(1) || "-"}
+                    </td>
+                    <td
+                      className={`px-4 py-4 whitespace-nowrap text-sm font-semibold ${
+                        customer.weightDiff && customer.weightDiff > 0
+                          ? "text-red-600"
+                          : "text-gray-900"
+                      }`}
+                    >
+                      {customer.weightDiff !== null
+                        ? `${
+                            customer.weightDiff > 0 ? "+" : ""
+                          }${customer.weightDiff.toFixed(1)}`
+                        : "-"}
                     </td>
                     <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-900">
-                      {customer.weight}
+                      {customer.completion_date
+                        ? new Date(customer.completion_date).toLocaleDateString(
+                            "ja-JP",
+                            {
+                              year: "numeric",
+                              month: "numeric",
+                              day: "numeric",
+                            }
+                          )
+                        : "-"}
                     </td>
-                    <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-900">
-                      {customer.favorite_food}
+                    <td
+                      className={`px-4 py-4 whitespace-nowrap text-sm font-semibold ${
+                        customer.daysRemaining !== null &&
+                        customer.daysRemaining < 0 &&
+                        (!customer.weightDiff || customer.weightDiff > 0)
+                          ? "text-red-600"
+                          : "text-gray-900"
+                      }`}
+                    >
+                      {customer.daysRemaining !== null
+                        ? `${customer.daysRemaining > 0 ? "" : ""}${
+                            customer.daysRemaining
+                          }日`
+                        : "-"}
                     </td>
-                    <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-900">
-                      {customer.completion_date}
+                    <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-600">
+                      {customer.lastUpdated
+                        ? new Date(customer.lastUpdated).toLocaleDateString(
+                            "ja-JP",
+                            {
+                              year: "numeric",
+                              month: "numeric",
+                              day: "numeric",
+                            }
+                          )
+                        : "未記録"}
                     </td>
                   </tr>
                 ))}
@@ -275,19 +449,22 @@ export default function Dashboard() {
                     氏名
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    年齢
+                    初回体重 (kg)
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    身長 (cm)
+                    現在体重 (kg)
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    体重 (kg)
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    好きな食べ物
+                    体重差分 (kg)
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     完了予定
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    残り日数
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    最終更新
                   </th>
                 </tr>
               </thead>
@@ -303,19 +480,62 @@ export default function Dashboard() {
                       </Link>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      {customer.age}
+                      {customer.firstWeight?.toFixed(1) || "-"}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      {customer.height}
+                      {customer.currentWeight?.toFixed(1) || "-"}
+                    </td>
+                    <td
+                      className={`px-6 py-4 whitespace-nowrap text-sm font-semibold ${
+                        customer.weightDiff && customer.weightDiff > 0
+                          ? "text-red-600"
+                          : "text-gray-900"
+                      }`}
+                    >
+                      {customer.weightDiff !== null
+                        ? `${
+                            customer.weightDiff > 0 ? "+" : ""
+                          }${customer.weightDiff.toFixed(1)}`
+                        : "-"}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      {customer.weight}
+                      {customer.completion_date
+                        ? new Date(customer.completion_date).toLocaleDateString(
+                            "ja-JP",
+                            {
+                              year: "numeric",
+                              month: "numeric",
+                              day: "numeric",
+                            }
+                          )
+                        : "-"}
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      {customer.favorite_food}
+                    <td
+                      className={`px-6 py-4 whitespace-nowrap text-sm font-semibold ${
+                        customer.daysRemaining !== null &&
+                        customer.daysRemaining < 0 &&
+                        (!customer.weightDiff || customer.weightDiff > 0)
+                          ? "text-red-600"
+                          : "text-gray-900"
+                      }`}
+                    >
+                      {customer.daysRemaining !== null
+                        ? `${customer.daysRemaining > 0 ? "" : ""}${
+                            customer.daysRemaining
+                          }日`
+                        : "-"}
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      {customer.completion_date}
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
+                      {customer.lastUpdated
+                        ? new Date(customer.lastUpdated).toLocaleDateString(
+                            "ja-JP",
+                            {
+                              year: "numeric",
+                              month: "numeric",
+                              day: "numeric",
+                            }
+                          )
+                        : "未記録"}
                     </td>
                   </tr>
                 ))}
@@ -323,11 +543,21 @@ export default function Dashboard() {
             </table>
           </div>
 
-          {customers.length === 0 && (
+          {customersWithWeightData.length === 0 && (
             <div className="text-center py-12 text-gray-500">
               登録された顧客データがありません。
             </div>
           )}
+        </div>
+
+        {/* ログアウトボタン */}
+        <div className="text-center mt-8 pb-4">
+          <button
+            onClick={handleLogout}
+            className="text-sm text-gray-400 hover:text-gray-600 transition duration-300"
+          >
+            ログアウト
+          </button>
         </div>
       </div>
     </div>
