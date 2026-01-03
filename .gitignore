@@ -56,6 +56,10 @@ __pycache__/
 .coverage
 htmlcov/
 
+# backups (exclude from git but keep example files)
+backend/scripts/backups/
+!backend/scripts/backups/.gitkeep
+
 # other
 .idea/
 .vscode/

@@ -1,0 +1,44 @@
+version: '3.8'
+
+services:
+  # Frontend service
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=staging
+    env_file:
+      - .env.staging
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+      - /app/.next
+    depends_on:
+      - backend
+    networks:
+      - michela-network
+
+  # Backend service
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    ports:
+      - "5000:5000"
+    environment:
+      - FLASK_ENV=staging
+      - PYTHONUNBUFFERED=1
+    env_file:
+      - ./backend/.env.staging
+    volumes:
+      - ./backend:/app
+      - /app/__pycache__
+    networks:
+      - michela-network
+
+networks:
+  michela-network:
+    driver: bridge
