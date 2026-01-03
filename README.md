@@ -142,6 +142,12 @@ NEXT_PUBLIC_FIREBASE_APP_ID=your_app_id
 NEXT_PUBLIC_API_URL=your_backend_api_url
 ```
 
+### 環境別設定
+
+- **本番環境**: `.env` または `.env.production`
+- **ステージング環境**: `.env.staging`（[詳細はこちら](docs/STAGING_SETUP.md)）
+- **開発環境**: `.env.local`
+
 ## 📋 主要機能（予定）
 
 ### Phase 1: MVP（最小限の製品）
@@ -164,6 +170,39 @@ NEXT_PUBLIC_API_URL=your_backend_api_url
 - [ ] トレーニングプランの自動生成
 - [ ] パーソナライズされたアドバイス
 - [ ] 予測分析と最適化提案
+
+## 📚 ドキュメント
+
+### 環境構築とデプロイ
+- [ステージング環境セットアップガイド](docs/STAGING_SETUP.md) - ステージング環境の構築方法
+- [バックアップ・リストアガイド](docs/BACKUP_GUIDE.md) - データバックアップとリストアの手順
+
+### 技術情報
+- [Gemini API設定ガイド](backend/GEMINI_SETUP.md) - AI機能の設定方法
+
+### インフラストラクチャ
+- **本番環境**: 
+  - フロントエンド: Vercel ([https://michela.vercel.app](https://michela.vercel.app))
+  - バックエンド: Render.com
+  - データベース: Firebase Firestore
+- **ステージング環境**: [セットアップガイド](docs/STAGING_SETUP.md)を参照
+
+## 🔄 バックアップとリストア
+
+本番環境データのバックアップとリストアが可能です：
+
+```bash
+# バックアップの作成
+cd backend
+python scripts/backup_firestore.py --environment production
+
+# ステージング環境へのリストア
+python scripts/restore_firestore.py \
+  --environment staging \
+  --backup-dir scripts/backups/production_YYYY-MM-DD_HH-MM-SS
+```
+
+詳細は [バックアップ・リストアガイド](docs/BACKUP_GUIDE.md) を参照してください。
 
 ## 🤝 コントリビューション
 

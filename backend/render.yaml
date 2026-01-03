@@ -1,4 +1,5 @@
 services:
+  # Production Backend
   - type: web
     name: michela-backend
     env: python
@@ -7,3 +8,23 @@ services:
     envVars:
       - key: GOOGLE_CREDENTIALS
         value: '{"type":"service_account", ...}'  # keys/michela-*.jsonの内容を貼り付け
+      - key: ENVIRONMENT
+        value: production
+      - key: FLASK_ENV
+        value: production
+
+  # Staging Backend
+  - type: web
+    name: michela-backend-staging
+    env: python
+    buildCommand: pip install -r requirements.txt
+    startCommand: python src/app/logic/api.py
+    envVars:
+      - key: GOOGLE_CREDENTIALS
+        sync: false  # Set in Render dashboard
+      - key: GEMINI_API_KEY
+        sync: false  # Set in Render dashboard
+      - key: ENVIRONMENT
+        value: staging
+      - key: FLASK_ENV
+        value: staging
