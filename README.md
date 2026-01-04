@@ -32,20 +32,25 @@ MICHELAは、以下の価値を提供します：
 
 ### フロントエンド
 - **言語**: TypeScript
-- **フレームワーク**: React / Next.js（検討中）
-- **ホスティング**: Firebase Hosting
+- **フレームワーク**: Next.js 15 (App Router)
+- **スタイリング**: Tailwind CSS
+- **グラフ**: Recharts
+- **ホスティング**: Vercel（本番）
 
-### バックエンド（予定）
-- **言語**: Java
-- **フレームワーク**: Spring Boot
-- **ホスティング**: Google Cloud Run / App Engine
+### バックエンド
+- **言語**: Python 3.x
+- **フレームワーク**: Flask
+- **AI**: Google Gemini API
+- **ホスティング**: Render.com
 
 ### データベース
-- **DB**: Google Cloud Firestore
+- **DB**: Google Cloud Firestore (NoSQL)
+- **認証**: ローカル認証（SHA-256ハッシュ）
+  - デフォルトユーザー: `admin/1234`
 
 ### インフラストラクチャ
 - **クラウドプラットフォーム**: Google Cloud Platform (GCP)
-- **認証**: Firebase Authentication（予定）
+- **CI/CD**: Vercel（自動デプロイ）
 
 ## 📁 プロジェクト構造
 
@@ -90,85 +95,136 @@ MICHELAは**関心の分離**を重視した構造を採用しています：
 
 ### 前提条件
 
+#### フロントエンド
 - Node.js (v18以上推奨)
-- npm または yarn
-- Firebase CLI（オプション）
+- npm
+
+#### バックエンド
+- Python 3.x
+- pip
+- Firebase認証情報（`keys/michela-*.json`）
+- Gemini API Key
 
 ### インストール
 
+#### フロントエンド
 ```bash
-# リポジトリのクローン
-git clone https://github.com/your-username/michela.git
-cd michela
-
-# 依存関係のインストール
+cd frontend
 npm install
-# または
-yarn install
+```
+
+#### バックエンド
+```bash
+cd backend
+pip install -r requirements.txt
+
+# .envファイルを作成
+cp .env.example .env
+# GOOGLE_CREDENTIALS と GEMINI_API_KEY を設定
 ```
 
 ### 開発サーバーの起動
 
+#### フロントエンド（ポート3000）
 ```bash
+cd frontend
 npm run dev
-# または
-yarn dev
+```
+
+#### バックエンド（ポート5000）
+```bash
+cd backend
+python src/app/logic/api.py
 ```
 
 ブラウザで `http://localhost:3000` を開いてアプリケーションを確認できます。
-
-### ビルド
-
-```bash
-npm run build
-# または
-yarn build
-```
+ログイン情報: `admin` / `1234`
 
 ## 🔐 環境変数の設定
 
-`.env.local` ファイルを作成し、必要な環境変数を設定してください：
-
+### フロントエンド（`.env.local`）
 ```env
-# Firebase設定
-NEXT_PUBLIC_FIREBASE_API_KEY=your_api_key
-NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN=your_auth_domain
-NEXT_PUBLIC_FIREBASE_PROJECT_ID=your_project_id
-NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET=your_storage_bucket
-NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=your_sender_id
-NEXT_PUBLIC_FIREBASE_APP_ID=your_app_id
-
-# バックエンドAPI（予定）
-NEXT_PUBLIC_API_URL=your_backend_api_url
+# バックエンドAPI URL（本番環境のみ）
+NEXT_PUBLIC_API_URL=https://michela.onrender.com
 ```
 
-## 📋 主要機能（予定）
+### バックエンド（`backend/.env`）
+```env
+# Firebase認証情報（keys/michela-*.jsonの内容をJSON文字列で）
+GOOGLE_CREDENTIALS={"type":"service_account",...}
 
-### Phase 1: MVP（最小限の製品）
-- [ ] ユーザー認証（サインアップ・ログイン）
-- [ ] トレーニング記録機能
-- [ ] 体重・体組成記録機能
-- [ ] 基本的なダッシュボード
+# Gemini API Key
+GEMINI_API_KEY=your_gemini_api_key
+```
 
-### Phase 2: データ分析
-- [ ] トレーニング進捗の可視化
-- [ ] 統計データとグラフ表示
-- [ ] 目標設定と達成度追跡
+**注意**: ローカル開発時は`NEXT_PUBLIC_API_URL`未設定で自動的に`http://127.0.0.1:5000`を使用します。
 
-### Phase 3: ソーシャル機能
-- [ ] ユーザー間のつながり
-- [ ] トレーニング記録の共有
-- [ ] コミュニティフィード
+## 📋 実装済み機能
 
-### Phase 4: AI・インテリジェンス
-- [ ] トレーニングプランの自動生成
-- [ ] パーソナライズされたアドバイス
-- [ ] 予測分析と最適化提案
+### ✅ Phase 1: MVP（基本機能）
+- [x] ユーザー認証（ログイン）
+- [x] 顧客管理（登録・編集・削除）
+- [x] トレーニング記録機能
+  - [x] 種目選択（プリセット + カスタム）
+  - [x] セット・レップ・重量記録
+  - [x] 履歴表示
+- [x] 体重記録機能
+  - [x] 体重履歴グラフ
+  - [x] 初回体重との比較
+- [x] 食事記録機能
+  - [x] 食品選択（プリセット）
+  - [x] PFCバランス計算
+  - [x] 栄養目標設定
+- [x] 基本的なダッシュボード
+  - [x] 顧客一覧
+  - [x] 体重進捗表示
+  - [x] 完了予定日管理
+
+### ✅ Phase 2: データ分析
+- [x] トレーニング進捗の可視化
+  - [x] ボリュームチャート
+  - [x] 種目別履歴
+- [x] 体重推移グラフ
+- [x] 栄養素サマリー（日別/週別）
+
+### ✅ Phase 4: AI機能（一部実装）
+- [x] Gemini APIによるAIアドバイス
+  - [x] トレーニングアドバイス（進捗評価）
+  - [x] 食事アドバイス（PFCバランス評価）
+  - [x] AI相談チャット
+- [x] 研究記事検索（PubMed連携）
+  - [x] 日英翻訳
+  - [x] 研究要約生成
+
+### 🚧 未実装機能
+- [ ] Firebase Authentication統合
+- [ ] ユーザー間のソーシャル機能
+- [ ] 画像アップロード（食事写真等）
+- [ ] プッシュ通知
+- [ ] リアルタイム更新（Firestore Snapshot）
+- [ ] テストコード
+
+## 📚 ドキュメント
+
+- [アーキテクチャレビュー](docs/architecture-review.md) - システム設計の詳細分析
+- [Copilot Instructions](.github/copilot-instructions.md) - AI開発支援用の詳細ガイド
+
+## 🚀 デプロイ
+
+### フロントエンド（Vercel）
+```bash
+cd frontend
+vercel --prod
+```
+
+### バックエンド（Render.com）
+- `backend/render.yaml`の設定に従って自動デプロイ
+- 環境変数: `GOOGLE_CREDENTIALS`, `GEMINI_API_KEY`
 
 ## 🤝 コントリビューション
 
-現在、このプロジェクトは開発初期段階です。
-コントリビューションに関するガイドラインは、プロジェクトの成熟に伴って整備予定です。
+現在、このプロジェクトは活発に開発中です。
+詳細な開発ガイドは[Copilot Instructions](.github/copilot-instructions.md)を参照してください。
 
 **MICHELA** - あなたの成長の旅を、データとともに。
 *Train Smart. Live Strong* 💪
