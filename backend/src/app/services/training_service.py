@@ -56,64 +56,73 @@ def get_exercise_presets():
 
 def add_exercise_preset(name, category='custom'):
     """カスタム種目を追加"""
-    db = get_db()
-    
-    if not name or not name.strip():
-        return None, '種目名が必要です'
-    
-    if not category or not category.strip():
-        return None, '部位が必要です'
-    
-    # 同じ名前がすでに存在するかチェック
-    existing = db.collection('exercise_presets').where('name', '==', name.strip()).limit(1).get()
-    if len(list(existing)) > 0:
-        return None, '同じ名前の種目がすでに存在します'
-    
-    doc_ref = db.collection('exercise_presets').document()
-    doc_ref.set({
-        'name': name.strip(),
-        'category': category.strip(),
-        'unit': 'kg',
-        'created_at': datetime.now().isoformat()
-    })
-    
-    return doc_ref.id, None
+    try:
+        db = get_db()
+        
+        if not name or not name.strip():
+            return None, '種目名が必要です'
+        
+        if not category or not category.strip():
+            return None, '部位が必要です'
+        
+        # 同じ名前がすでに存在するかチェック
+        existing = db.collection('exercise_presets').where('name', '==', name.strip()).limit(1).get()
+        if len(list(existing)) > 0:
+            return None, '同じ名前の種目がすでに存在します'
+        
+        doc_ref = db.collection('exercise_presets').document()
+        doc_ref.set({
+            'name': name.strip(),
+            'category': category.strip(),
+            'unit': 'kg',
+            'created_at': datetime.now().isoformat()
+        })
+        
+        return doc_ref.id, None
+    except Exception as e:
+        return None, str(e)
 
 
 def delete_exercise_preset(exercise_id):
     """カスタム種目を削除（デフォルトプリセットは削除不可）"""
-    db = get_db()
-    
-    # デフォルトプリセットかチェック
-    default_ids = [ex['id'] for ex in EXERCISE_PRESETS]
-    if exercise_id in default_ids:
-        return 'デフォルト種目は削除できません'
-    
-    # Firestoreから削除
-    db.collection('exercise_presets').document(exercise_id).delete()
-    return None
+    try:
+        db = get_db()
+        
+        # デフォルトプリセットかチェック
+        default_ids = [ex['id'] for ex in EXERCISE_PRESETS]
+        if exercise_id in default_ids:
+            return 'デフォルト種目は削除できません'
+        
+        # Firestoreから削除
+        db.collection('exercise_presets').document(exercise_id).delete()
+        return None
+    except Exception as e:
+        return str(e)
 
 
 def add_training_session(data):
     """トレーニングセッションを登録"""
-    db = get_db()
-    required = ['customer_id', 'date', 'exercises']
-    if not all(k in data for k in required):
-        return None, 'Missing required fields'
-    
-    doc_ref = db.collection('training_sessions').document()
-    session_id = doc_ref.id
-    
-    doc_ref.set({
-        'customer_id': data['customer_id'],
-        'date': data['date'],
-        'exercises': data['exercises'],  # [{ exercise_id, sets: [{ reps, weight }] }]
-        'notes': data.get('notes', ''),
-        'duration_minutes': data.get('duration_minutes', 0),
-        'created_at': datetime.now().isoformat()
-    })
-    
-    return session_id, None
+    try:
+        db = get_db()
+        required = ['customer_id', 'date', 'exercises']
+        if not all(k in data for k in required):
+            return None, 'Missing required fields'
+        
+        doc_ref = db.collection('training_sessions').document()
+        session_id = doc_ref.id
+        
+        doc_ref.set({
+            'customer_id': data['customer_id'],
+            'date': data['date'],
+            'exercises': data['exercises'],  # [{ exercise_id, sets: [{ reps, weight }] }]
+            'notes': data.get('notes', ''),
+            'duration_minutes': data.get('duration_minutes', 0),
+            'created_at': datetime.now().isoformat()
+        })
+        
+        return session_id, None
+    except Exception as e:
+        return None, str(e)
 
 
 def get_training_sessions_by_customer(customer_id, limit=20):
@@ -134,15 +143,18 @@ def get_training_sessions_by_customer(customer_id, limit=20):
 
 def get_training_session_by_id(session_id):
     """トレーニングセッション詳細を取得"""
-    db = get_db()
-    doc_ref = db.collection('training_sessions').document(session_id)
-    doc = doc_ref.get()
-    
-    if doc.exists:
-        session = doc.to_dict()
-        session['id'] = doc.id
-        return session, None
-    return None, 'Training session not found'
+    try:
+        db = get_db()
+        doc_ref = db.collection('training_sessions').document(session_id)
+        doc = doc_ref.get()
+        
+        if doc.exists:
+            session = doc.to_dict()
+            session['id'] = doc.id
+            return session, None
+        return None, 'Training session not found'
+    except Exception as e:
+        return None, str(e)
 
 
 def update_training_session(session_id, data):

@@ -46,7 +46,6 @@ MICHELAは、以下の価値を提供します：
 ### データベース
 - **DB**: Google Cloud Firestore (NoSQL)
 - **認証**: ローカル認証（SHA-256ハッシュ）
-  - デフォルトユーザー: `admin/1234`
 
 ### インフラストラクチャ
 - **クラウドプラットフォーム**: Google Cloud Platform (GCP)
@@ -136,10 +135,6 @@ npm run dev
 cd backend
 python src/app/logic/api.py
 ```
-
-ブラウザで `http://localhost:3000` を開いてアプリケーションを確認できます。
-ログイン情報: `admin` / `1234`
-
 ## 🔐 環境変数の設定
 
 ### フロントエンド（`.env.local`）
@@ -159,43 +154,6 @@ GEMINI_API_KEY=your_gemini_api_key
 
 **注意**: ローカル開発時は`NEXT_PUBLIC_API_URL`未設定で自動的に`http://127.0.0.1:5000`を使用します。
 
-## 📋 実装済み機能
-
-### ✅ Phase 1: MVP（基本機能）
-- [x] ユーザー認証（ログイン）
-- [x] 顧客管理（登録・編集・削除）
-- [x] トレーニング記録機能
-  - [x] 種目選択（プリセット + カスタム）
-  - [x] セット・レップ・重量記録
-  - [x] 履歴表示
-- [x] 体重記録機能
-  - [x] 体重履歴グラフ
-  - [x] 初回体重との比較
-- [x] 食事記録機能
-  - [x] 食品選択（プリセット）
-  - [x] PFCバランス計算
-  - [x] 栄養目標設定
-- [x] 基本的なダッシュボード
-  - [x] 顧客一覧
-  - [x] 体重進捗表示
-  - [x] 完了予定日管理
-
-### ✅ Phase 2: データ分析
-- [x] トレーニング進捗の可視化
-  - [x] ボリュームチャート
-  - [x] 種目別履歴
-- [x] 体重推移グラフ
-- [x] 栄養素サマリー（日別/週別）
-
-### ✅ Phase 4: AI機能（一部実装）
-- [x] Gemini APIによるAIアドバイス
-  - [x] トレーニングアドバイス（進捗評価）
-  - [x] 食事アドバイス（PFCバランス評価）
-  - [x] AI相談チャット
-- [x] 研究記事検索（PubMed連携）
-  - [x] 日英翻訳
-  - [x] 研究要約生成
-
 ### 🚧 未実装機能
 - [ ] Firebase Authentication統合
 - [ ] ユーザー間のソーシャル機能
@@ -205,8 +163,6 @@ GEMINI_API_KEY=your_gemini_api_key
 - [ ] テストコード
 
 ## 📚 ドキュメント
-
-- [アーキテクチャレビュー](docs/architecture-review.md) - システム設計の詳細分析
 - [Copilot Instructions](.github/copilot-instructions.md) - AI開発支援用の詳細ガイド
 
 ## 🚀 デプロイ

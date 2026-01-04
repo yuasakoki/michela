@@ -10,33 +10,36 @@ def get_db():
 
 def register_customer(data):
     """顧客を登録"""
-    db = get_db()
-    required = ['name', 'age', 'height', 'weight', 'favorite_food', 'completion_date']
-    if not all(k in data for k in required):
-        return None, 'Missing required fields'
+    try:
+        db = get_db()
+        required = ['name', 'age', 'height', 'weight', 'favorite_food', 'completion_date']
+        if not all(k in data for k in required):
+            return None, 'Missing required fields'
 
-    # 顧客情報を登録
-    doc_ref = db.collection('customer').document()
-    customer_id = doc_ref.id
-    doc_ref.set({
-        'name': data['name'],
-        'age': int(data['age']),
-        'height': float(data['height']),
-        'weight': float(data['weight']),
-        'favorite_food': data['favorite_food'],
-        'completion_date': data['completion_date']
-    })
-    
-    # 初回の体重履歴を登録
-    weight_history_ref = db.collection('weight_history').document()
-    weight_history_ref.set({
-        'customer_id': customer_id,
-        'weight': float(data['weight']),
-        'recorded_at': datetime.now().isoformat(),
-        'note': '初回登録'
-    })
+        # 顧客情報を登録
+        doc_ref = db.collection('customer').document()
+        customer_id = doc_ref.id
+        doc_ref.set({
+            'name': data['name'],
+            'age': int(data['age']),
+            'height': float(data['height']),
+            'weight': float(data['weight']),
+            'favorite_food': data['favorite_food'],
+            'completion_date': data['completion_date']
+        })
+        
+        # 初回の体重履歴を登録
+        weight_history_ref = db.collection('weight_history').document()
+        weight_history_ref.set({
+            'customer_id': customer_id,
+            'weight': float(data['weight']),
+            'recorded_at': datetime.now().isoformat(),
+            'note': '初回登録'
+        })
 
-    return customer_id, None
+        return customer_id, None
+    except Exception as e:
+        return None, str(e)
 
 
 def get_all_customers():
@@ -52,14 +55,17 @@ def get_all_customers():
 
 def get_customer_by_id(customer_id):
     """IDで顧客を取得"""
-    db = get_db()
-    doc_ref = db.collection('customer').document(customer_id)
-    doc = doc_ref.get()
-    if doc.exists:
-        customer = doc.to_dict()
-        customer['id'] = doc.id
-        return customer, None
-    return None, 'Customer not found'
+    try:
+        db = get_db()
+        doc_ref = db.collection('customer').document(customer_id)
+        doc = doc_ref.get()
+        if doc.exists:
+            customer = doc.to_dict()
+            customer['id'] = doc.id
+            return customer, None
+        return None, 'Customer not found'
+    except Exception as e:
+        return None, str(e)
 
 
 def update_customer(customer_id, data):

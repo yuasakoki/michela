@@ -9,6 +9,9 @@ GEMINI_API_KEY = os.environ.get('GEMINI_API_KEY', '')
 if GEMINI_API_KEY:
     genai.configure(api_key=GEMINI_API_KEY)
 
+# 定数
+DEFAULT_TITLE = 'No title'
+
 # 研究記事のキャッシュ
 research_cache = {
     'data': None,
@@ -62,7 +65,7 @@ def fetch_latest_research():
                     article_data = summary_data['result'][pmid]
                     
                     # 英語タイトル取得
-                    english_title = article_data.get('title', 'No title')
+                    english_title = article_data.get('title', DEFAULT_TITLE)
                     if english_title.endswith('.'):
                         english_title = english_title[:-1]
                     
@@ -70,7 +73,7 @@ def fetch_latest_research():
                     try:
                         translated = translator.translate(english_title, src='en', dest='ja')
                         japanese_title = translated.text
-                    except:
+                    except Exception:
                         japanese_title = english_title  # 翻訳失敗時は英語のまま
                     
                     # 著者取得
@@ -85,7 +88,7 @@ def fetch_latest_research():
                         from dateutil import parser
                         parsed_date = parser.parse(pub_date_raw)
                         pub_date = parsed_date.strftime('%Y-%m-%d')
-                    except:
+                    except Exception:
                         import re
                         year_match = re.search(r'20\d{2}', pub_date_raw)
                         pub_date = f"{year_match.group()}-01-01" if year_match else "2024-01-01"
@@ -311,7 +314,7 @@ def get_research_summary(pmid):
         
         # タイトル取得
         title_elem = root.find('.//ArticleTitle')
-        title = title_elem.text if title_elem is not None else 'No title'
+        title = title_elem.text if title_elem is not None else DEFAULT_TITLE
         
         # Abstract取得
         abstract_elem = root.find('.//Abstract/AbstractText')

@@ -50,35 +50,38 @@ def get_food_presets():
 
 def add_meal_record(data):
     """食事記録を登録"""
-    db = get_db()
-    required = ['customer_id', 'date', 'meal_type', 'foods']
-    if not all(k in data for k in required):
-        return None, 'Missing required fields'
-    
-    # 合計カロリー・PFCを計算
-    total_calories = sum(food.get('calories', 0) * food.get('quantity', 1) for food in data['foods'])
-    total_protein = sum(food.get('protein', 0) * food.get('quantity', 1) for food in data['foods'])
-    total_fat = sum(food.get('fat', 0) * food.get('quantity', 1) for food in data['foods'])
-    total_carbs = sum(food.get('carbs', 0) * food.get('quantity', 1) for food in data['foods'])
-    
-    doc_ref = db.collection('meal_records').document()
-    record_id = doc_ref.id
-    
-    doc_ref.set({
-        'customer_id': data['customer_id'],
-        'date': data['date'],
-        'meal_type': data['meal_type'],  # breakfast, lunch, dinner, snack
-        'foods': data['foods'],  # [{ food_id, name, calories, protein, fat, carbs, quantity }]
-        'total_calories': total_calories,
-        'total_protein': total_protein,
-        'total_fat': total_fat,
-        'total_carbs': total_carbs,
-        'notes': data.get('notes', ''),
-        'photo_url': data.get('photo_url', ''),
-        'created_at': datetime.now().isoformat()
-    })
-    
-    return record_id, None
+    try:
+        db = get_db()
+        required = ['customer_id', 'date', 'meal_type', 'foods']
+        if not all(k in data for k in required):
+            return None, 'Missing required fields'
+        
+        # 合計カロリー・PFCを計算
+        total_calories = sum(food.get('calories', 0) * food.get('quantity', 1) for food in data['foods'])
+        total_protein = sum(food.get('protein', 0) * food.get('quantity', 1) for food in data['foods'])
+        total_fat = sum(food.get('fat', 0) * food.get('quantity', 1) for food in data['foods'])
+        total_carbs = sum(food.get('carbs', 0) * food.get('quantity', 1) for food in data['foods'])
+        
+        doc_ref = db.collection('meal_records').document()
+        record_id = doc_ref.id
+        
+        doc_ref.set({
+            'customer_id': data['customer_id'],
+            'date': data['date'],
+            'meal_type': data['meal_type'],  # breakfast, lunch, dinner, snack
+            'foods': data['foods'],  # [{ food_id, name, calories, protein, fat, carbs, quantity }]
+            'total_calories': total_calories,
+            'total_protein': total_protein,
+            'total_fat': total_fat,
+            'total_carbs': total_carbs,
+            'notes': data.get('notes', ''),
+            'photo_url': data.get('photo_url', ''),
+            'created_at': datetime.now().isoformat()
+        })
+        
+        return record_id, None
+    except Exception as e:
+        return None, str(e)
 
 
 def get_meal_records_by_customer(customer_id, start_date=None, end_date=None, limit=30):
@@ -169,21 +172,24 @@ def get_daily_nutrition_summary(customer_id, date):
 
 def get_nutrition_goal(customer_id):
     """顧客の栄養目標を取得"""
-    db = get_db()
-    doc_ref = db.collection('nutrition_goals').document(customer_id)
-    doc = doc_ref.get()
-    
-    if doc.exists:
-        return doc.to_dict(), None
-    
-    # デフォルト目標（設定がない場合）
-    return {
-        'customer_id': customer_id,
-        'target_calories': 2000,
-        'target_protein': 150,
-        'target_fat': 60,
-        'target_carbs': 200
-    }, None
+    try:
+        db = get_db()
+        doc_ref = db.collection('nutrition_goals').document(customer_id)
+        doc = doc_ref.get()
+        
+        if doc.exists:
+            return doc.to_dict(), None
+        
+        # デフォルト目標（設定がない場合）
+        return {
+            'customer_id': customer_id,
+            'target_calories': 2000,
+            'target_protein': 150,
+            'target_fat': 60,
+            'target_carbs': 200
+        }, None
+    except Exception as e:
+        return None, str(e)
 
 
 def set_nutrition_goal(customer_id, data):

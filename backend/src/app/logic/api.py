@@ -658,6 +658,9 @@ def backup_all():
 def restore_backup():
     """バックアップデータを復元"""
     try:
+        from firebase_admin import firestore
+        db = firestore.client()
+        
         data = request.json
         if not data or 'collections' not in data:
             return jsonify({"error": "Invalid backup data"}), 400

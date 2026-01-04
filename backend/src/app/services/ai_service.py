@@ -74,7 +74,7 @@ def chat_with_ai(message, use_cache=True):
 
 ユーザーの質問: {message}"""
         
-        print(f"API REQUEST: Generating content...")
+        print("API REQUEST: Generating content...")
         response = model.generate_content(prompt)
         
         # キャッシュに保存
