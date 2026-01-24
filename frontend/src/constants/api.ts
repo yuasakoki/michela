@@ -7,7 +7,7 @@
  * APIベースURL
  * 環境変数NEXT_PUBLIC_API_URLが設定されていない場合はローカルホストを使用
  */
-export const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:5000';
+export const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
 
 /**
  * APIエンドポイント定義
@@ -15,6 +15,8 @@ export const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1
 export const API_ENDPOINTS = {
     // 認証
     LOGIN: `${API_BASE_URL}/login`,
+    LOGOUT: `${API_BASE_URL}/logout`,
+    VERIFY_TOKEN: `${API_BASE_URL}/verify_token`,
 
     // 顧客管理
     CUSTOMERS: `${API_BASE_URL}/get_customers`,

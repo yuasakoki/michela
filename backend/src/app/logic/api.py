@@ -1,4 +1,7 @@
-from flask import Flask, request, jsonify
+import jwt
+import datetime
+from functools import wraps
+from flask import Flask, request, jsonify, make_response, g
 from flask_cors import CORS
 import firebase_admin
 from firebase_admin import credentials
@@ -49,24 +52,179 @@ CORS(app,
      ],
      supports_credentials=True)
 
+JWT_SECRET = "CHANGE_ME_SUPER_SECRET"
+JWT_ALGORITHM = "HS256"
+JWT_EXPIRE_DAYS = 1
+
+# 本番環境判定（Render.comではGOOGLE_CREDENTIALSが環境変数にある）
+IS_PRODUCTION = 'GOOGLE_CREDENTIALS' in os.environ
+
+
+def jwt_required(f):
+    """
+    JWT認証が必要なエンドポイント用デコレータ
+    - トークンが無い/無効/期限切れの場合は401を返す
+    - 有効な場合はg.current_userにユーザー情報を格納
+    """
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        token = request.cookies.get('michela_auth_token')
+
+        if not token:
+            return jsonify({"error": "Authentication required", "expired": False}), 401
+
+        try:
+            payload = jwt.decode(token, JWT_SECRET, algorithms=[JWT_ALGORITHM])
+            g.current_user = {
+                "user_id": payload.get("user_id"),
+                "role": payload.get("role")
+            }
+            return f(*args, **kwargs)
+        except jwt.ExpiredSignatureError:
+            # トークン期限切れ → 自動ログアウト用フラグを付けて返す
+            return jsonify({"error": "Token expired", "expired": True}), 401
+        except jwt.InvalidTokenError:
+            return jsonify({"error": "Invalid token", "expired": False}), 401
+
+    return decorated_function
+
 
 # ==================== 認証・ユーザー管理エンドポイント ====================
 
 @app.route('/login', methods=['POST'])
 def login():
-    """ユーザーログイン"""
+    """
+    ユーザーログイン
+    - 認証成功 → JWT を cookie に保存
+    - Next.js middleware がこの cookie を読む
+    """
+    print("========== LOGIN START ==========")
+    print(f"IS_PRODUCTION: {IS_PRODUCTION}")
+    print(f"Request Origin: {request.headers.get('Origin')}")
+
     data = request.json
+    print(f"Request data: username={data.get('username') if data else 'None'}")
+
     if not data or 'username' not in data or 'password' not in data:
+        print("ERROR: Username and password are required")
         return jsonify({"error": "Username and password are required"}), 400
-    
-    user_data, error = user_service.authenticate_user(data['username'], data['password'])
+
+    # =========================
+    # ① 認証（既存ロジック）
+    # =========================
+    user_data, error = user_service.authenticate_user(
+        data['username'],
+        data['password']
+    )
     if error:
+        print(f"AUTH ERROR: {error}")
         return jsonify({'error': error}), 401
-    
-    return jsonify({
+
+    print(f"AUTH SUCCESS: user_id={user_data['id']}")
+
+    # =========================
+    # ② JWT を作成
+    # =========================
+    payload = {
+        "user_id": user_data["id"],
+        "role": user_data.get("role"),
+        "exp": datetime.datetime.utcnow() + datetime.timedelta(days=JWT_EXPIRE_DAYS)
+    }
+
+    token = jwt.encode(payload, JWT_SECRET, algorithm=JWT_ALGORITHM)
+    print(f"JWT created: {token[:50]}...")
+
+    # =========================
+    # ③ JWT を Cookie に設定してレスポンス
+    # =========================
+    response = make_response(jsonify({
         "message": "Login successful",
         "user": user_data
-    }), 200
+    }), 200)
+
+    # Cookie設定（環境に応じて切り替え）
+    cookie_secure = IS_PRODUCTION
+    cookie_samesite = 'None' if IS_PRODUCTION else 'Lax'
+    print(f"Cookie settings: secure={cookie_secure}, samesite={cookie_samesite}")
+
+    response.set_cookie(
+        'michela_auth_token',
+        token,
+        httponly=True,
+        secure=cookie_secure,
+        samesite=cookie_samesite,
+        max_age=JWT_EXPIRE_DAYS * 24 * 60 * 60,
+        path='/'
+    )
+
+    print("========== LOGIN END (SUCCESS) ==========")
+    return response
+
+
+@app.route('/logout', methods=['POST'])
+def logout():
+    """
+    ユーザーログアウト
+    - Cookie から JWT を削除
+    """
+    response = make_response(jsonify({
+        "message": "Logout successful"
+    }), 200)
+
+    # Cookieを削除（max_age=0で即座に期限切れ）
+    response.set_cookie(
+        'michela_auth_token',
+        '',
+        httponly=True,
+        secure=IS_PRODUCTION,
+        samesite='None' if IS_PRODUCTION else 'Lax',
+        max_age=0,
+        path='/'
+    )
+
+    return response
+
+
+@app.route('/verify_token', methods=['GET'])
+def verify_token():
+    """
+    トークン検証エンドポイント
+    - フロントエンドがトークンの有効性を確認するために使用
+    - 期限切れの場合は401を返す
+    """
+    token = request.cookies.get('michela_auth_token')
+
+    if not token:
+        return jsonify({"error": "No token provided", "valid": False}), 401
+
+    try:
+        payload = jwt.decode(token, JWT_SECRET, algorithms=[JWT_ALGORITHM])
+        return jsonify({
+            "valid": True,
+            "user_id": payload.get("user_id"),
+            "role": payload.get("role"),
+            "exp": payload.get("exp")
+        }), 200
+    except jwt.ExpiredSignatureError:
+        # トークン期限切れ
+        response = make_response(jsonify({
+            "error": "Token expired",
+            "valid": False,
+            "expired": True
+        }), 401)
+        # 期限切れのCookieを削除
+        response.set_cookie(
+            'michela_auth_token',
+            '',
+            httponly=True,
+            secure=IS_PRODUCTION,
+            samesite='None' if IS_PRODUCTION else 'Lax',
+            max_age=0,
+            path='/'
+        )
+        return response
+    except jwt.InvalidTokenError:
+        return jsonify({"error": "Invalid token", "valid": False}), 401
 
 
 @app.route('/get_users', methods=['GET'])
@@ -238,33 +396,8 @@ def get_training_advice(customer_id):
         latest_session = sessions[0] if sessions else None
         past_sessions = sessions[1:4] if len(sessions) > 1 else []
         
-        # 今回のトレーニング
-        current_summary = "Today:\n"
-        if latest_session:
-            current_summary += f"{latest_session.get('date', '')}\n"
-            for ex in latest_session.get('exercises', []):
-                sets = ", ".join([f"{s.get('reps')}×{s.get('weight')}kg" for s in ex.get('sets', [])])
-                current_summary += f"- {ex.get('exercise_name')}: {sets}\n"
-        
-        # 過去3回の簡潔な記録（進捗比較用）
-        past_summary = "Past 3 sessions:\n"
-        for session in past_sessions:
-            date = session.get('date', '')
-            for ex in session.get('exercises', []):
-                # 最大重量を取得
-                max_weight = max([s.get('weight', 0) for s in ex.get('sets', [])]) if ex.get('sets') else 0
-                sets_count = len(ex.get('sets', []))
-                past_summary += f"{date}: {ex.get('exercise_name')} {sets_count}sets, max {max_weight}kg\n"
-        
-        # AIにアドバイスを求める（英語プロンプト、日本語回答）
-        prompt = f"""{current_summary}
-{past_summary}
-
-Context: Warmed up, trainer support, intermediate level, 0kg=bodyweight.
-Compare with past 3 sessions, evaluate progress in 3 points, and advise for next session.
-Please respond in Japanese."""
-        
-        advice_text, error, cached_until = ai_service.chat_with_ai(prompt)
+        # RAGを使用してアドバイス生成
+        advice_text, error, cached_until = ai_service.get_training_advice_with_rag(customer_id, sessions)
         if error:
             return jsonify({"error": error}), 500
         

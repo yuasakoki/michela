@@ -2,7 +2,6 @@
 import React, { useState, useEffect } from "react";
 import { useRouter, useParams } from "next/navigation";
 import Link from "next/link";
-import Image from "next/image";
 import { useAuth } from "@/hooks/useAuth";
 import { API_ENDPOINTS } from "@/constants/api";
 import { toast, TOAST_DURATION } from "@/utils/toast";
@@ -11,6 +10,11 @@ import {
   ERROR_MESSAGES,
   TARGET_NAMES,
 } from "@/constants/messages";
+import { Button } from "@/components/ui/Button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/Card";
+import { Input } from "@/components/ui/Input";
+import { Utensils, ArrowLeft, Plus, Target, Bot, Trash2, X } from "lucide-react";
+import ReactMarkdown from "react-markdown";
 
 interface Food {
   food_id: string;
@@ -203,29 +207,10 @@ export default function MealHistory() {
 
   if (loading) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-blue-50 via-purple-50 to-pink-50">
-        <div className="text-center">
-          <div className="animate-float animate-pulse-glow mb-6">
-            <Image
-              src="/vercel.svg"
-              alt="loading"
-              width={200}
-              height={200}
-              priority
-            />
-          </div>
-          <div className="flex items-center justify-center gap-2">
-            <div className="w-3 h-3 bg-blue-500 rounded-full animate-bounce"></div>
-            <div
-              className="w-3 h-3 bg-purple-500 rounded-full animate-bounce"
-              style={{ animationDelay: "0.1s" }}
-            ></div>
-            <div
-              className="w-3 h-3 bg-pink-500 rounded-full animate-bounce"
-              style={{ animationDelay: "0.2s" }}
-            ></div>
-          </div>
-          <p className="mt-4 text-gray-600 text-lg">データを読み込んでいます</p>
+      <div className="flex min-h-screen items-center justify-center bg-slate-950">
+        <div className="flex flex-col items-center gap-4">
+          <div className="h-12 w-12 border-4 border-orange-600 border-t-transparent rounded-full animate-spin" />
+          <p className="text-orange-500 font-mono text-sm animate-pulse">読み込み中...</p>
         </div>
       </div>
     );
@@ -233,52 +218,72 @@ export default function MealHistory() {
 
   if (error) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-gray-100">
+      <div className="flex min-h-screen items-center justify-center bg-slate-950">
         <div className="text-center">
-          <h1 className="text-3xl font-bold text-red-800">{error}</h1>
+          <h1 className="text-3xl font-bold text-red-500">{error}</h1>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-100 p-4 md:p-8">
-      <div className="max-w-6xl mx-auto">
-        <h1 className="text-3xl font-bold text-gray-800 mb-6">食事記録</h1>
+    <div className="min-h-screen bg-slate-950 text-slate-200 p-4 md:p-8">
+      {/* Header */}
+      <div className="max-w-6xl mx-auto mb-6">
+        <div className="flex items-center justify-between mb-6">
+          <div className="flex items-center gap-4">
+            <Link href={`/customer/${customerId}`}>
+              <Button variant="ghost" size="icon" className="text-slate-400 hover:text-white bg-slate-900/50 hover:bg-slate-800">
+                <ArrowLeft className="h-5 w-5" />
+              </Button>
+            </Link>
+            <div className="flex items-center gap-3">
+              <div className="h-10 w-10 bg-orange-600 rounded-xl flex items-center justify-center shadow-lg shadow-orange-600/20">
+                <Utensils className="h-6 w-6 text-white" />
+              </div>
+              <div>
+                <h1 className="text-2xl font-bold tracking-tight text-white">食事記録</h1>
+                <p className="text-sm text-slate-400">栄養管理とカロリートラッキング</p>
+              </div>
+            </div>
+          </div>
+        </div>
 
-        <div className="mb-6 flex flex-wrap gap-3">
+        <div className="flex flex-wrap gap-3">
           <Link href={`/customer/${customerId}/meal/new`}>
-            <button className="px-6 py-3 bg-green-600 text-white rounded-lg shadow-md hover:bg-green-700 transition duration-300">
+            <Button className="bg-green-600 hover:bg-green-950/300">
+              <Plus className="h-4 w-4 mr-2" />
               新規記録
-            </button>
+            </Button>
           </Link>
           <Link href={`/customer/${customerId}/meal/goal`}>
-            <button className="px-6 py-3 bg-purple-600 text-white rounded-lg shadow-md hover:bg-purple-700 transition duration-300">
+            <Button variant="secondary" className="bg-purple-600 hover:bg-purple-500">
+              <Target className="h-4 w-4 mr-2" />
               目標設定
-            </button>
+            </Button>
           </Link>
-          <button
+          <Button
             onClick={handleGetAdvice}
             disabled={loadingAdvice}
-            className="px-6 py-3 bg-blue-600 text-white rounded-lg shadow-md hover:bg-blue-700 transition duration-300 disabled:bg-gray-400"
+            variant="secondary"
+            className="bg-blue-600 hover:bg-blue-950/300"
           >
+            <Bot className="h-4 w-4 mr-2" />
             {loadingAdvice ? "生成中..." : "AIアドバイス"}
-          </button>
-          <Link href={`/customer/${customerId}`}>
-            <button className="px-6 py-3 bg-gray-500 text-white rounded-lg shadow-md hover:bg-gray-600 transition duration-300">
-              戻る
-            </button>
-          </Link>
+          </Button>
         </div>
+      </div>
+
+      <div className="max-w-6xl mx-auto space-y-6">
 
         {/* AIアドバイス表示エリア */}
         {aiAdvice && (
-          <div className="bg-gradient-to-r from-blue-50 to-green-50 border border-blue-200 rounded-lg p-6 mb-6 shadow-md">
+          <div className="bg-gradient-to-r from-blue-50 to-green-50 border border-blue-800 rounded-lg p-6 mb-6 shadow-md">
             <div className="flex items-start gap-3">
               <div className="text-3xl">🍎</div>
               <div className="flex-1">
                 <div className="flex justify-between items-center mb-2">
-                  <h3 className="text-lg font-bold text-blue-800">
+                  <h3 className="text-lg font-bold text-blue-300">
                     AI栄養士からのアドバイス
                   </h3>
                   <button
@@ -286,14 +291,14 @@ export default function MealHistory() {
                       setAiAdvice("");
                       setCachedUntil(null);
                     }}
-                    className="text-gray-500 hover:text-gray-700 text-xl font-bold px-2"
+                    className="text-slate-500 hover:text-gray-700 text-xl font-bold px-2"
                     title="閉じる"
                   >
                     ✕
                   </button>
                 </div>
                 {cachedUntil && (
-                  <div className="text-xs text-gray-500 mb-2">
+                  <div className="text-xs text-slate-500 mb-2">
                     ※ このアドバイスはキャッシュされています。次回の更新:{" "}
                     {new Date(cachedUntil).toLocaleString("ja-JP")}
                   </div>
@@ -307,7 +312,7 @@ export default function MealHistory() {
         )}
 
         {/* 日付選択 */}
-        <div className="bg-white shadow-md rounded-lg p-6 mb-6">
+        <div className="bg-slate-900/50 shadow-md rounded-lg p-6 mb-6">
           <div className="flex items-center gap-4">
             <label htmlFor="date" className="font-medium text-gray-700">
               日付:
@@ -324,8 +329,8 @@ export default function MealHistory() {
 
         {/* 1日のサマリー */}
         {dailySummary && nutritionGoal && (
-          <div className="bg-white shadow-md rounded-lg p-6 mb-6">
-            <h2 className="text-xl font-bold text-gray-800 mb-4">
+          <div className="bg-slate-900/50 shadow-md rounded-lg p-6 mb-6">
+            <h2 className="text-xl font-bold text-slate-200 mb-4">
               {selectedDate} の栄養サマリー
             </h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -448,41 +453,41 @@ export default function MealHistory() {
                 </div>
               </div>
             </div>
-            <div className="mt-4 text-sm text-gray-600">
+            <div className="mt-4 text-sm text-slate-400">
               食事回数: {dailySummary.meal_count}回
             </div>
           </div>
         )}
 
         {/* 食事記録一覧 */}
-        <div className="bg-white shadow-md rounded-lg overflow-hidden">
+        <div className="bg-slate-900/50 shadow-md rounded-lg overflow-hidden">
           <div className="overflow-x-auto">
             <table className="min-w-full table-auto">
               <thead className="bg-gray-200">
                 <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">
                     時刻
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">
                     食事区分
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">
                     内容
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">
                     カロリー
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">
                     P/F/C
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">
                     操作
                   </th>
                 </tr>
               </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
+              <tbody className="bg-slate-900/50 divide-y divide-gray-200">
                 {filteredRecords.map((record) => (
-                  <tr key={record.id} className="hover:bg-gray-50">
+                  <tr key={record.id} className="hover:bg-slate-800/20">
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                       {record.created_at
                         ? new Date(record.created_at).toLocaleTimeString(
@@ -500,7 +505,7 @@ export default function MealHistory() {
                     <td className="px-6 py-4 text-sm text-gray-900">
                       {record.foods.map((f) => f.name).join(", ")}
                       {record.notes && (
-                        <div className="text-xs text-gray-500 mt-1">
+                        <div className="text-xs text-slate-500 mt-1">
                           {record.notes}
                         </div>
                       )}
@@ -528,7 +533,7 @@ export default function MealHistory() {
           </div>
 
           {filteredRecords.length === 0 && (
-            <div className="text-center py-12 text-gray-500">
+            <div className="text-center py-12 text-slate-500">
               {selectedDate
                 ? "この日の食事記録はありません。"
                 : "食事記録がありません。"}
@@ -540,15 +545,15 @@ export default function MealHistory() {
       {/* 削除確認モーダル */}
       {deleteId && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4">
-            <h2 className="text-xl font-bold text-gray-800 mb-4">削除確認</h2>
-            <p className="text-gray-600 mb-6">
+          <div className="bg-slate-900/50 rounded-lg p-6 max-w-md w-full mx-4">
+            <h2 className="text-xl font-bold text-slate-200 mb-4">削除確認</h2>
+            <p className="text-slate-400 mb-6">
               この食事記録を削除してもよろしいですか？
             </p>
             <div className="flex gap-3 justify-end">
               <button
                 onClick={() => setDeleteId(null)}
-                className="px-4 py-2 bg-gray-300 text-gray-800 rounded hover:bg-gray-400"
+                className="px-4 py-2 bg-gray-300 text-slate-200 rounded hover:bg-gray-400"
               >
                 キャンセル
               </button>

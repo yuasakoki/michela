@@ -4,6 +4,7 @@ import google.generativeai as genai
 from datetime import datetime, timedelta
 import hashlib
 
+
 GEMINI_API_KEY = os.environ.get('GEMINI_API_KEY', '')
 if GEMINI_API_KEY:
     genai.configure(api_key=GEMINI_API_KEY)
@@ -85,3 +86,11 @@ def chat_with_ai(message, use_cache=True):
     except Exception as e:
         print(f"ERROR in chat_with_ai: {str(e)}")
         return None, str(e), None
+
+
+
+
+
+
+# --- RAG機能は削除されました ---
+# get_training_advice_with_ragは利用不可です

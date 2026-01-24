@@ -1,10 +1,13 @@
 "use client";
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
-import Image from "next/image";
 import { useAuth } from "@/hooks/useAuth";
 import { API_ENDPOINTS } from "@/constants/api";
 import { toast } from "@/utils/toast";
+import { Button } from "@/components/ui/Button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/Card";
+import { Input } from "@/components/ui/Input";
+import { Search, ArrowLeft, ChevronLeft, ChevronRight, ExternalLink, FileText } from "lucide-react";
 
 interface SearchResult {
   pmid: string;
@@ -124,132 +127,149 @@ export default function ResearchSearch() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-100 p-4 md:p-8">
-      <div className="max-w-4xl mx-auto">
-        <div className="flex justify-center mb-4">
-          <Image src="/vercel.svg" alt="logo" width={150} height={150} />
-        </div>
-
-        <h1 className="text-3xl font-bold text-gray-800 mb-6 text-center">
-          研究論文検索
-        </h1>
-
-        <div className="mb-4 text-right">
-          <Link href="/dashboard">
-            <button className="px-4 py-2 bg-gray-500 text-white rounded-lg shadow hover:bg-gray-600 transition duration-300">
-              ダッシュボードに戻る
-            </button>
-          </Link>
-        </div>
-
-        {/* 検索ボックス */}
-        <div className="bg-white shadow-lg rounded-lg p-6 mb-6">
-          <div className="flex gap-2">
-            <input
-              type="text"
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              onKeyPress={(e) => e.key === "Enter" && handleSearch()}
-              placeholder="研究キーワードを入力（例: タンパク質 筋肥大）"
-              className="flex-1 px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-            />
-            <button
-              onClick={() => handleSearch()}
-              disabled={loading}
-              className="px-6 py-3 bg-blue-600 text-white rounded-lg shadow hover:bg-blue-700 disabled:bg-gray-400 transition duration-300"
-            >
-              {loading ? "検索中..." : "検索"}
-            </button>
+    <div className="min-h-screen bg-slate-950 text-slate-200 p-4 md:p-8">
+      {/* Header */}
+      <div className="max-w-4xl mx-auto mb-6">
+        <div className="flex items-center justify-between mb-6">
+          <div className="flex items-center gap-4">
+            <Link href="/dashboard">
+              <Button variant="ghost" size="icon" className="text-slate-400 hover:text-white bg-slate-900/50 hover:bg-slate-800">
+                <ArrowLeft className="h-5 w-5" />
+              </Button>
+            </Link>
+            <div className="flex items-center gap-3">
+              <div className="h-10 w-10 bg-blue-600 rounded-xl flex items-center justify-center shadow-lg shadow-blue-600/20">
+                <Search className="h-6 w-6 text-white" />
+              </div>
+              <div>
+                <h1 className="text-2xl font-bold tracking-tight text-white">研究論文検索</h1>
+                <p className="text-sm text-slate-400">PubMed リサーチデータベース</p>
+              </div>
+            </div>
           </div>
-          {translatedQuery && (
-            <p className="mt-2 text-sm text-gray-500">
-              検索クエリ: {translatedQuery}
-            </p>
-          )}
         </div>
+      </div>
 
-        {/* 検索結果 */}
-        {loading && (
-          <div className="bg-white shadow-lg rounded-lg p-12 text-center">
-            <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mb-4"></div>
-            <p className="text-gray-600">検索中...</p>
+      <div className="max-w-4xl mx-auto space-y-6">
+        {/* 検索ボックス */}
+        <Card className="border-slate-800 bg-slate-900/50 backdrop-blur-md">
+          <CardContent className="p-6">
+            <div className="flex gap-2">
+              <Input
+                type="text"
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                onKeyPress={(e) => e.key === "Enter" && handleSearch()}
+                placeholder="研究キーワードを入力（例: タンパク質 筋肥大）"
+                className="flex-1 bg-slate-950 border-slate-700 text-slate-200 placeholder:text-slate-500"
+              />
+              <Button
+                onClick={() => handleSearch()}
+                disabled={loading}
+                className="px-6"
+              >
+                <Search className="h-4 w-4 mr-2" />
+                {loading ? "検索中..." : "検索"}
+              </Button>
+            </div>
             {translatedQuery && (
-              <p className="mt-2 text-sm text-gray-500">
+              <p className="mt-2 text-sm text-slate-400">
                 検索クエリ: {translatedQuery}
               </p>
             )}
-          </div>
+          </CardContent>
+        </Card>
+
+        {/* 検索結果 */}
+        {loading && (
+          <Card className="border-slate-800 bg-slate-900/50 backdrop-blur-md">
+            <CardContent className="p-12 text-center">
+              <div className="h-12 w-12 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+              <p className="text-slate-400">検索中...</p>
+              {translatedQuery && (
+                <p className="mt-2 text-sm text-slate-500">
+                  検索クエリ: {translatedQuery}
+                </p>
+              )}
+            </CardContent>
+          </Card>
         )}
 
         {displayedResults.length > 0 && (
-          <div className="bg-white shadow-lg rounded-lg p-6">
-            <div className="flex justify-between items-center mb-4">
-              <h2 className="text-xl font-bold text-gray-800">
-                検索結果 ({offset + 1}～{offset + results.length}件 / 全
-                {totalCount}件)
-              </h2>
-              <div className="flex gap-2">
-                <button
-                  onClick={() => handleSearch(Math.max(0, offset - 10))}
-                  disabled={offset === 0 || loading}
-                  className="px-4 py-2 bg-gray-600 text-white rounded-lg shadow hover:bg-gray-700 disabled:bg-gray-300 transition duration-300"
-                >
-                  ← 前へ
-                </button>
-                <button
-                  onClick={() => handleSearch(offset + 10)}
-                  disabled={offset + results.length >= totalCount || loading}
-                  className="px-4 py-2 bg-blue-600 text-white rounded-lg shadow hover:bg-blue-700 disabled:bg-gray-300 transition duration-300"
-                >
-                  次へ →
-                </button>
+          <Card className="border-slate-800 bg-slate-900/50 backdrop-blur-md">
+            <CardHeader className="border-b border-slate-800/50">
+              <div className="flex justify-between items-center">
+                <CardTitle className="text-slate-200">
+                  検索結果 ({offset + 1}～{offset + results.length}件 / 全{totalCount}件)
+                </CardTitle>
+                <div className="flex gap-2">
+                  <Button
+                    onClick={() => handleSearch(Math.max(0, offset - 10))}
+                    disabled={offset === 0 || loading}
+                    variant="secondary"
+                    size="sm"
+                  >
+                    <ChevronLeft className="h-4 w-4 mr-1" /> 前へ
+                  </Button>
+                  <Button
+                    onClick={() => handleSearch(offset + 10)}
+                    disabled={offset + results.length >= totalCount || loading}
+                    variant="secondary"
+                    size="sm"
+                  >
+                    次へ <ChevronRight className="h-4 w-4 ml-1" />
+                  </Button>
+                </div>
               </div>
-            </div>
-            <div className="space-y-4">
+            </CardHeader>
+            <CardContent className="p-6 space-y-4">
               {displayedResults.map((result, index) => (
                 <div
                   key={result.pmid}
-                  className="border border-gray-200 rounded-lg overflow-hidden animate-fadeIn"
+                  className="border border-slate-700 rounded-lg overflow-hidden animate-fadeIn hover:border-slate-600 transition-colors"
                   style={{ animationDelay: `${index * 0.1}s` }}
                 >
                   <div
                     onClick={() => handleResultClick(result.pmid)}
-                    className="p-4 hover:bg-gray-50 cursor-pointer transition duration-200"
+                    className="p-4 hover:bg-slate-800/50 cursor-pointer transition duration-200"
                   >
-                    <h3 className="text-lg font-semibold text-blue-600 mb-2">
+                    <h3 className="text-lg font-semibold text-blue-400 mb-2 flex items-start gap-2">
+                      <FileText className="h-5 w-5 mt-0.5 flex-shrink-0" />
                       {result.title}
                     </h3>
-                    <p className="text-sm text-gray-600 mb-1">
+                    <p className="text-sm text-slate-400 mb-1">
                       著者: {result.authors}
                     </p>
-                    <p className="text-xs text-gray-500">
+                    <p className="text-xs text-slate-500">
                       発行日: {result.date}
                     </p>
                   </div>
 
                   {/* 展開された要約 */}
                   {expandedPmid === result.pmid && (
-                    <div className="border-t border-gray-200 bg-gray-50 p-4">
+                    <div className="border-t border-slate-700 bg-slate-950/50 p-4">
                       {loadingSummary === result.pmid && (
-                        <p className="text-center text-gray-500">
+                        <p className="text-center text-slate-400">
                           要約を生成中...
                         </p>
                       )}
                       {summaries[result.pmid] && (
                         <>
-                          <h4 className="font-semibold text-gray-800 mb-2">
+                          <h4 className="font-semibold text-slate-200 mb-2">
                             AI要約:
                           </h4>
-                          <p className="text-gray-700 mb-4">
+                          <p className="text-slate-300 mb-4">
                             {summaries[result.pmid].summary}
                           </p>
                           <a
                             href={result.url}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="inline-block px-4 py-2 bg-green-600 text-white rounded-lg shadow hover:bg-green-700 transition duration-300"
                           >
-                            PubMedで詳細を見る
+                            <Button variant="secondary" size="sm" className="bg-green-600 hover:bg-green-500 border-green-500/30">
+                              <ExternalLink className="h-4 w-4 mr-2" />
+                              PubMedで詳細を見る
+                            </Button>
                           </a>
                         </>
                       )}
@@ -257,14 +277,17 @@ export default function ResearchSearch() {
                   )}
                 </div>
               ))}
-            </div>
-          </div>
+            </CardContent>
+          </Card>
         )}
 
         {!loading && displayedResults.length === 0 && translatedQuery && (
-          <div className="bg-white shadow-lg rounded-lg p-6 text-center">
-            <p className="text-gray-500">検索結果が見つかりませんでした</p>
-          </div>
+          <Card className="border-slate-800 bg-slate-900/50 backdrop-blur-md">
+            <CardContent className="p-6 text-center">
+              <FileText className="h-12 w-12 mx-auto mb-4 text-slate-600" />
+              <p className="text-slate-400">検索結果が見つかりませんでした</p>
+            </CardContent>
+          </Card>
         )}
       </div>
     </div>

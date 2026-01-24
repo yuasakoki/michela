@@ -35,7 +35,7 @@ export default function TrainingVolumeChart({
     const totalVolume = session.exercises.reduce((sum, exercise) => {
       const exerciseVolume = exercise.sets.reduce(
         (setSum, set) => setSum + set.reps * set.weight,
-        0
+        0,
       );
       return sum + exerciseVolume;
     }, 0);
@@ -66,34 +66,38 @@ export default function TrainingVolumeChart({
   }
 
   return (
-    <div className="w-full h-80">
-      <ResponsiveContainer width="100%" height="100%">
-        <LineChart
-          data={chartData}
-          margin={{ top: 5, right: 30, left: 0, bottom: 5 }}
-        >
-          <CartesianGrid strokeDasharray="3 3" />
-          <XAxis dataKey="date" />
-          <YAxis
-            label={{
-              value: "総ボリューム (kg)",
-              angle: -90,
-              position: "insideLeft",
-            }}
-          />
-          <Tooltip />
-          <Legend />
-          <Line
-            type="monotone"
-            dataKey="volume"
-            stroke="#10b981"
-            strokeWidth={2}
-            dot={{ r: 4 }}
-            activeDot={{ r: 6 }}
-            name="総ボリューム"
-          />
-        </LineChart>
-      </ResponsiveContainer>
-    </div>
+    <ResponsiveContainer width="100%" height="100%">
+      <LineChart
+        data={chartData}
+        margin={{ top: 5, right: 30, left: 0, bottom: 5 }}
+      >
+        <CartesianGrid strokeDasharray="3 3" stroke="#334155" />
+        <XAxis dataKey="date" stroke="#94a3b8" fontSize={12} />
+        <YAxis
+          label={{
+            value: "総ボリューム (kg)",
+            angle: -90,
+            position: "insideLeft",
+          }}
+        />
+        <Tooltip
+          contentStyle={{
+            backgroundColor: "#1e293b",
+            border: "1px solid #334155",
+            borderRadius: "8px",
+          }}
+        />
+        <Legend />
+        <Line
+          type="monotone"
+          dataKey="volume"
+          stroke="#10b981"
+          strokeWidth={2}
+          dot={{ r: 4 }}
+          activeDot={{ r: 6 }}
+          name="総ボリューム"
+        />
+      </LineChart>
+    </ResponsiveContainer>
   );
 }

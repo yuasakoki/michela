@@ -1,7 +1,6 @@
 "use client";
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
-import Image from "next/image";
 import { useAuth } from "@/hooks/useAuth";
 import { useRouter } from "next/navigation";
 import { toast, TOAST_DURATION } from "@/utils/toast";
@@ -11,13 +10,17 @@ import {
   ERROR_MESSAGES,
   TARGET_NAMES,
 } from "@/constants/messages";
+import { Button } from "@/components/ui/Button";
+import { Card, CardContent, CardHeader, CardTitle, CardFooter } from "@/components/ui/Card";
+import { Input } from "@/components/ui/Input";
+import { UserPlus, ChevronLeft, Ruler, Weight, Calendar, Utensils, Hash } from "lucide-react";
 
 export default function CustomerRegist() {
-  useAuth(); // 認証チェック
+  useAuth();
   const router = useRouter();
 
   useEffect(() => {
-    document.title = "顧客登録 | MII Fit";
+    document.title = "顧客登録 | MII Fit Pro";
   }, []);
 
   const [name, setName] = useState("");
@@ -26,8 +29,10 @@ export default function CustomerRegist() {
   const [weight, setWeight] = useState("");
   const [favoriteFood, setFavoriteFood] = useState("");
   const [completionDate, setCompletionDate] = useState("");
+  const [loading, setLoading] = useState(false);
 
   const handleSubmit = async () => {
+    setLoading(true);
     try {
       const response = await fetch(API_ENDPOINTS.REGISTER_CUSTOMER, {
         method: "POST",
@@ -45,19 +50,16 @@ export default function CustomerRegist() {
       });
 
       if (response.ok) {
-        const result = await response.json();
         toast.success(
           SUCCESS_MESSAGES.REGISTERED(TARGET_NAMES.CUSTOMER),
           TOAST_DURATION.SHORT
         );
-        // フォームをリセット
         setName("");
         setAge("");
         setHeight("");
         setWeight("");
         setFavoriteFood("");
         setCompletionDate("");
-        // ダッシュボードに移動
         setTimeout(() => {
           router.push("/dashboard");
         }, TOAST_DURATION.SHORT);
@@ -72,127 +74,119 @@ export default function CustomerRegist() {
         );
       }
     } catch (error) {
-      toast.error("ネットワークエラーが発生しました");
+      toast.error("Network error occurred.");
       console.error("Error:", error);
+    } finally {
+        setLoading(false);
     }
   };
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-gray-100">
-      <div className="bg-white shadow-lg rounded-lg p-8 max-w-md w-full">
-        <div className="flex justify-center mb-4">
-          <Image src="/vercel.svg" alt="logo" width={150} height={150} />
-        </div>
-        <h1 className="text-3xl font-bold text-gray-800 mb-6 text-center">
-          顧客登録
-        </h1>
-        <form className="space-y-4">
-          <div>
-            <label
-              htmlFor="name"
-              className="block text-sm font-medium text-gray-700"
-            >
-              氏名
-            </label>
-            <input
-              id="name"
-              type="text"
+    <div className="flex min-h-screen items-center justify-center bg-slate-950 p-4">
+      <Card className="w-full max-w-lg border-slate-800 bg-slate-900/50 backdrop-blur-md">
+        <CardHeader>
+             <div className="flex items-center gap-3 mb-2">
+                <div className="h-10 w-10 bg-blue-600 rounded-xl flex items-center justify-center shadow-lg shadow-blue-600/20">
+                    <UserPlus className="h-6 w-6 text-white" />
+                </div>
+                <div>
+                    <CardTitle>新規顧客プロフィール</CardTitle>
+                    <p className="text-sm text-slate-400">新しいトレーニングプログラムを開始します。</p>
+                </div>
+             </div>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="space-y-2">
+            <label className="text-xs font-semibold text-slate-400 uppercase tracking-wider">氏名</label>
+            <Input
+              placeholder="例: 山田 太郎"
               value={name}
               onChange={(e) => setName(e.target.value)}
-              className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-green-500 focus:border-green-500"
+              className="bg-slate-950 border-slate-700 focus:border-blue-500"
             />
           </div>
-          <div>
-            <label
-              htmlFor="age"
-              className="block text-sm font-medium text-gray-700"
-            >
-              年齢
-            </label>
-            <input
-              id="age"
-              type="number"
-              value={age}
-              onChange={(e) => setAge(e.target.value)}
-              className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-green-500 focus:border-green-500"
-            />
+          
+          <div className="grid grid-cols-2 gap-4">
+             <div className="space-y-2">
+                <label className="text-xs font-semibold text-slate-400 uppercase tracking-wider flex items-center gap-1">
+                    <Hash className="w-3 h-3" /> 年齢
+                </label>
+                <Input
+                  type="number"
+                  placeholder="25"
+                  value={age}
+                  onChange={(e) => setAge(e.target.value)}
+                  className="bg-slate-950 border-slate-700 focus:border-blue-500"
+                />
+             </div>
+             <div className="space-y-2">
+                <label className="text-xs font-semibold text-slate-400 uppercase tracking-wider flex items-center gap-1">
+                    <Calendar className="w-3 h-3" /> 目標日
+                </label>
+                <Input
+                  type="date"
+                  value={completionDate}
+                  onChange={(e) => setCompletionDate(e.target.value)}
+                  className="bg-slate-950 border-slate-700 focus:border-blue-500"
+                />
+             </div>
           </div>
-          <div>
-            <label
-              htmlFor="height"
-              className="block text-sm font-medium text-gray-700"
-            >
-              身長 (cm)
-            </label>
-            <input
-              id="height"
-              type="number"
-              value={height}
-              onChange={(e) => setHeight(e.target.value)}
-              className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-green-500 focus:border-green-500"
-            />
+
+          <div className="grid grid-cols-2 gap-4">
+             <div className="space-y-2">
+                <label className="text-xs font-semibold text-slate-400 uppercase tracking-wider flex items-center gap-1">
+                    <Ruler className="w-3 h-3" /> 身長 (cm)
+                </label>
+                <Input
+                  type="number"
+                  placeholder="175"
+                  value={height}
+                  onChange={(e) => setHeight(e.target.value)}
+                  className="bg-slate-950 border-slate-700 focus:border-blue-500"
+                />
+             </div>
+             <div className="space-y-2">
+                <label className="text-xs font-semibold text-slate-400 uppercase tracking-wider flex items-center gap-1">
+                    <Weight className="w-3 h-3" /> 体重 (kg)
+                </label>
+                <Input
+                  type="number"
+                  placeholder="70.5"
+                  value={weight}
+                  onChange={(e) => setWeight(e.target.value)}
+                  className="bg-slate-950 border-slate-700 focus:border-blue-500"
+                />
+             </div>
           </div>
-          <div>
-            <label
-              htmlFor="weight"
-              className="block text-sm font-medium text-gray-700"
-            >
-              体重 (kg)
+
+          <div className="space-y-2">
+            <label className="text-xs font-semibold text-slate-400 uppercase tracking-wider flex items-center gap-1">
+                <Utensils className="w-3 h-3" /> 好きな食べ物
             </label>
-            <input
-              id="weight"
-              type="number"
-              value={weight}
-              onChange={(e) => setWeight(e.target.value)}
-              className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-green-500 focus:border-green-500"
-            />
-          </div>
-          <div>
-            <label
-              htmlFor="favoriteFood"
-              className="block text-sm font-medium text-gray-700"
-            >
-              好きな食べ物
-            </label>
-            <input
-              id="favoriteFood"
-              type="text"
+            <Input
+              placeholder="例: 鶏むね肉"
               value={favoriteFood}
               onChange={(e) => setFavoriteFood(e.target.value)}
-              className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-green-500 focus:border-green-500"
+              className="bg-slate-950 border-slate-700 focus:border-blue-500"
             />
           </div>
-          <div>
-            <label
-              htmlFor="completionDate"
-              className="block text-sm font-medium text-gray-700"
-            >
-              完了予定
-            </label>
-            <input
-              id="completionDate"
-              type="date"
-              value={completionDate}
-              onChange={(e) => setCompletionDate(e.target.value)}
-              className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-green-500 focus:border-green-500"
-            />
-          </div>
-          <button
-            type="button"
+
+          <Button
             onClick={handleSubmit}
-            className="mt-6 px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
+            isLoading={loading}
+            className="w-full mt-4 bg-blue-600 hover:bg-blue-500"
           >
-            登録
-          </button>
-          <div className="mt-4">
+             {loading ? "登録中..." : "プロフィール作成"}
+          </Button>
+        </CardContent>
+        <CardFooter className="justify-center border-t border-slate-800/50 pt-4">
             <Link href="/dashboard">
-              <button className="px-4 py-2 bg-gray-500 text-white rounded hover:bg-gray-600">
-                戻る
-              </button>
+              <Button variant="ghost" size="sm" className="text-slate-400 hover:text-white">
+                <ChevronLeft className="mr-2 h-4 w-4" /> キャンセルして戻る
+              </Button>
             </Link>
-          </div>
-        </form>
-      </div>
+        </CardFooter>
+      </Card>
     </div>
   );
 }

@@ -1,13 +1,23 @@
 "use client";
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
-import Image from "next/image";
-import { useAuth } from "@/hooks/useAuth";
+// import { useAuth } from "@/hooks/useAuth";
 import { useRole } from "@/hooks/useRole";
 import { logoutApi } from "@/services/authService";
 import { useRouter } from "next/navigation";
-import { toast } from "@/utils/toast";
 import { API_ENDPOINTS } from "@/constants/api";
+import { Button } from "@/components/ui/Button";
+import { Card } from "@/components/ui/Card";
+import {
+  Database,
+  Search,
+  Bot,
+  UserPlus,
+  LogOut,
+  ArrowUpDown,
+  Dumbbell,
+  Users,
+} from "lucide-react";
 
 interface Customer {
   id: string;
@@ -34,26 +44,19 @@ interface CustomerWithWeightData extends Customer {
   lastUpdated: string | null;
 }
 
-interface ResearchArticle {
-  title: string;
-  summary: string;
-  source: string;
-  date: string;
-  url: string;
-}
-
 export default function Dashboard() {
-  useAuth(); // 認証チェック
-  const { isDeveloper } = useRole(); // 権限チェック
+  // useAuth();
+  console.log("Dashboard Start");
+  const { isDeveloper } = useRole();
   const router = useRouter();
 
   useEffect(() => {
-    document.title = "ダッシュボード | MII Fit";
+    document.title = "Dashboard | MII Fit Pro";
   }, []);
 
-  const handleLogout = () => {
-    if (confirm("ログアウトしますか？")) {
-      logoutApi();
+  const handleLogout = async () => {
+    if (confirm("Disconnect from session?")) {
+      await logoutApi();
       router.push("/");
     }
   };
@@ -65,11 +68,6 @@ export default function Dashboard() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [sortOption, setSortOption] = useState<string>("");
-  const [researchArticles, setResearchArticles] = useState<ResearchArticle[]>(
-    []
-  );
-  const [loadingResearch, setLoadingResearch] = useState(false);
-  const [isExpanded, setIsExpanded] = useState(false);
 
   useEffect(() => {
     const fetchCustomers = async () => {
@@ -77,110 +75,77 @@ export default function Dashboard() {
         const response = await fetch(API_ENDPOINTS.CUSTOMERS);
         if (response.ok) {
           const data = await response.json();
-
-          // 各顧客の体重履歴を取得
           const customersWithData = await Promise.all(
             data.map(async (customer: Customer) => {
               try {
                 const weightResponse = await fetch(
-                  API_ENDPOINTS.WEIGHT_HISTORY(customer.id, 1000)
+                  API_ENDPOINTS.WEIGHT_HISTORY(customer.id, 1000),
+                );
+                let weightHistory: WeightRecord[] = [];
+                if (weightResponse.ok) {
+                  weightHistory = await weightResponse.json();
+                }
+
+                const sortedHistory = [...weightHistory].sort(
+                  (a, b) =>
+                    new Date(a.recorded_at).getTime() -
+                    new Date(b.recorded_at).getTime(),
                 );
 
-                if (weightResponse.ok) {
-                  const weightHistory: WeightRecord[] =
-                    await weightResponse.json();
+                const firstWeight =
+                  sortedHistory.length > 0
+                    ? sortedHistory[0].weight
+                    : customer.weight;
+                const currentWeight =
+                  sortedHistory.length > 0
+                    ? sortedHistory[sortedHistory.length - 1].weight
+                    : customer.weight;
+                const weightDiff = currentWeight - firstWeight;
+                const lastUpdated =
+                  sortedHistory.length > 0
+                    ? sortedHistory[sortedHistory.length - 1].recorded_at
+                    : null;
 
-                  // 体重履歴を日付順にソート（古い順）
-                  const sortedHistory = [...weightHistory].sort(
-                    (a, b) =>
-                      new Date(a.recorded_at).getTime() -
-                      new Date(b.recorded_at).getTime()
-                  );
-
-                  const firstWeight =
-                    sortedHistory.length > 0
-                      ? sortedHistory[0].weight
-                      : customer.weight;
-                  const currentWeight =
-                    sortedHistory.length > 0
-                      ? sortedHistory[sortedHistory.length - 1].weight
-                      : customer.weight;
-                  const weightDiff = currentWeight - firstWeight;
-                  const lastUpdated =
-                    sortedHistory.length > 0
-                      ? sortedHistory[sortedHistory.length - 1].recorded_at
-                      : null;
-
-                  // 完了予定日から残り日数を計算
-                  const completionDate = new Date(customer.completion_date);
-                  const today = new Date();
-                  const diffTime = completionDate.getTime() - today.getTime();
-                  const daysRemaining = Math.ceil(
-                    diffTime / (1000 * 60 * 60 * 24)
-                  );
-
-                  return {
-                    ...customer,
-                    firstWeight,
-                    currentWeight,
-                    weightDiff,
-                    daysRemaining,
-                    lastUpdated,
-                  };
-                } else {
-                  // 体重履歴が取得できない場合は登録時の体重を使用
-                  const completionDate = new Date(customer.completion_date);
-                  const today = new Date();
-                  const diffTime = completionDate.getTime() - today.getTime();
-                  const daysRemaining = Math.ceil(
-                    diffTime / (1000 * 60 * 60 * 24)
-                  );
-
-                  return {
-                    ...customer,
-                    firstWeight: customer.weight,
-                    currentWeight: customer.weight,
-                    weightDiff: 0,
-                    daysRemaining,
-                    lastUpdated: null,
-                  };
-                }
-              } catch (error) {
-                // エラー時も登録時の体重を使用
                 const completionDate = new Date(customer.completion_date);
                 const today = new Date();
                 const diffTime = completionDate.getTime() - today.getTime();
                 const daysRemaining = Math.ceil(
-                  diffTime / (1000 * 60 * 60 * 24)
+                  diffTime / (1000 * 60 * 60 * 24),
                 );
 
+                return {
+                  ...customer,
+                  firstWeight,
+                  currentWeight,
+                  weightDiff,
+                  daysRemaining,
+                  lastUpdated,
+                };
+              } catch (error) {
                 return {
                   ...customer,
                   firstWeight: customer.weight,
                   currentWeight: customer.weight,
                   weightDiff: 0,
-                  daysRemaining,
+                  daysRemaining: 0,
                   lastUpdated: null,
                 };
               }
-            })
+            }),
           );
-
           setCustomersWithWeightData(customersWithData);
           setCustomers(data);
         }
       } catch (error) {
         console.error("Error fetching customers:", error);
-        setError("顧客データの取得に失敗しました");
+        setError("Failed to retrieve customer database.");
       } finally {
         setLoading(false);
       }
     };
-
     fetchCustomers();
   }, []);
 
-  // 顧客リストをソート
   const sortedCustomers = React.useMemo(() => {
     const sorted = [...customersWithWeightData];
     if (sortOption === "name-asc") {
@@ -191,13 +156,13 @@ export default function Dashboard() {
       sorted.sort(
         (a, b) =>
           new Date(a.completion_date).getTime() -
-          new Date(b.completion_date).getTime()
+          new Date(b.completion_date).getTime(),
       );
     } else if (sortOption === "date-desc") {
       sorted.sort(
         (a, b) =>
           new Date(b.completion_date).getTime() -
-          new Date(a.completion_date).getTime()
+          new Date(a.completion_date).getTime(),
       );
     } else if (sortOption === "weight-diff-asc") {
       sorted.sort((a, b) => (a.weightDiff || 0) - (b.weightDiff || 0));
@@ -207,63 +172,14 @@ export default function Dashboard() {
     return sorted;
   }, [customersWithWeightData, sortOption]);
 
-  // 研究記事を日付順にソート（新しい順）
-  const sortedResearchArticles = React.useMemo(() => {
-    return [...researchArticles].sort(
-      (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
-    );
-  }, [researchArticles]);
-
-  const handleSearchMore = () => {
-    window.open(
-      "https://www.google.com/search?q=筋トレ+ダイエット+最新研究",
-      "_blank"
-    );
-  };
-
-  const fetchResearchArticles = async () => {
-    setLoadingResearch(true);
-    try {
-      const response = await fetch(API_ENDPOINTS.LATEST_RESEARCH);
-      if (response.ok) {
-        const data = await response.json();
-        setResearchArticles(data.articles || []);
-      } else {
-        toast.error("最新研究の取得に失敗しました");
-      }
-    } catch (err) {
-      toast.error("ネットワークエラーが発生しました");
-      console.error("Error fetching research:", err);
-    } finally {
-      setLoadingResearch(false);
-    }
-  };
-
   if (loading) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-blue-50 via-purple-50 to-pink-50">
-        <div className="text-center">
-          <div className="animate-float animate-pulse-glow mb-6">
-            <Image
-              src="/vercel.svg"
-              alt="loading"
-              width={200}
-              height={200}
-              priority
-            />
-          </div>
-          <div className="flex items-center justify-center gap-2">
-            <div className="w-3 h-3 bg-blue-500 rounded-full animate-bounce"></div>
-            <div
-              className="w-3 h-3 bg-purple-500 rounded-full animate-bounce"
-              style={{ animationDelay: "0.1s" }}
-            ></div>
-            <div
-              className="w-3 h-3 bg-pink-500 rounded-full animate-bounce"
-              style={{ animationDelay: "0.2s" }}
-            ></div>
-          </div>
-          <p className="mt-4 text-gray-600 text-lg">データを読み込んでいます</p>
+      <div className="flex min-h-screen items-center justify-center bg-slate-950">
+        <div className="flex flex-col items-center gap-4">
+          <div className="h-12 w-12 border-4 border-blue-600 border-t-transparent rounded-full animate-spin" />
+          <p className="text-blue-500 font-mono text-sm animate-pulse">
+            INITIALIZING DASHBOARD...
+          </p>
         </div>
       </div>
     );
@@ -271,292 +187,233 @@ export default function Dashboard() {
 
   if (error) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-gray-100">
-        <div className="text-center text-red-600">
-          <p>{error}</p>
-        </div>
+      <div className="flex min-h-screen items-center justify-center bg-slate-950 text-red-500 font-bold">
+        {error}
       </div>
     );
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-gray-100">
-      <div className="bg-white shadow-lg rounded-lg p-6 md:p-8 max-w-7xl w-full mx-2 md:mx-4">
-        <div className="flex justify-center mb-4">
-          <Image src="/vercel.svg" alt="logo" width={150} height={150} />
+    <div className="min-h-screen bg-slate-950 text-slate-200 pb-20 selection:bg-blue-500/30">
+      {/* Navbar / Header */}
+      <div className="sticky top-0 z-50 glass-dark border-b border-white/5 px-6 py-4 flex flex-col md:flex-row items-center justify-between gap-4">
+        <div className="flex items-center gap-3">
+          <div className="h-10 w-10 bg-blue-600 rounded-xl flex items-center justify-center shadow-lg shadow-blue-600/20">
+            <Dumbbell className="h-6 w-6 text-white" />
+          </div>
+          <div>
+            <h1 className="text-xl font-bold tracking-tight text-white leading-none">
+              MII FIT <span className="text-blue-500">PRO</span>
+            </h1>
+            <p className="text-xs text-slate-400 font-mono">DASHBOARD v2.0</p>
+          </div>
         </div>
-        <div className="text-right mb-4 md:mb-6">
+
+        <div className="flex flex-wrap items-center gap-2">
           {isDeveloper && (
             <Link href="/admin/backup">
-              <button className="px-4 py-2 md:px-6 md:py-3 bg-gray-600 text-white rounded-lg shadow-md hover:bg-gray-700 transition duration-300 text-sm md:text-base mr-2">
-                🛠️ バックアップ
-              </button>
+              <Button variant="secondary" size="sm" className="bg-slate-800/50">
+                <Database className="mr-2 h-4 w-4" /> バックアップ
+              </Button>
             </Link>
           )}
           <Link href="/research-search">
-            <button className="px-4 py-2 md:px-6 md:py-3 bg-purple-600 text-white rounded-lg shadow-md hover:bg-purple-700 transition duration-300 text-sm md:text-base mr-2">
-              研究を検索
-            </button>
+            <Button
+              variant="secondary"
+              size="sm"
+              className="bg-slate-800/50 hover:text-blue-300"
+            >
+              <Search className="mr-2 h-4 w-4" /> リサーチ
+            </Button>
           </Link>
           <Link href="/ai-chat">
-            <button className="px-4 py-2 md:px-6 md:py-3 bg-green-600 text-white rounded-lg shadow-md hover:bg-green-700 transition duration-300 text-sm md:text-base mr-2">
-              AI相談
-            </button>
-          </Link>
-          <Link href="/customer">
-            <button className="px-4 py-2 md:px-6 md:py-3 bg-blue-600 text-white rounded-lg shadow-md hover:bg-blue-700 transition duration-300 text-sm md:text-base">
-              顧客登録
-            </button>
-          </Link>
-        </div>
-
-        <div className="bg-white shadow-lg rounded-lg overflow-hidden">
-          <div className="p-4 bg-gray-50 border-b">
-            <label
-              htmlFor="sort"
-              className="mr-2 text-sm font-medium text-gray-700"
+            <Button
+              variant="secondary"
+              size="sm"
+              className="bg-slate-800/50 hover:text-green-300"
             >
-              ソート:
-            </label>
-            <select
-              id="sort"
-              value={sortOption}
-              onChange={(e) => setSortOption(e.target.value)}
-              className="border border-gray-300 rounded px-3 py-1"
-            >
-              <option value="">選択してください</option>
-              <option value="name-asc">氏名昇順</option>
-              <option value="name-desc">氏名降順</option>
-              <option value="date-asc">完了予定日昇順</option>
-              <option value="date-desc">完了予定日降順</option>
-              <option value="weight-diff-asc">体重差分昇順</option>
-              <option value="weight-diff-desc">体重差分降順</option>
-            </select>
-          </div>
-
-          {/* スマホ用レイアウト: 氏名列固定 + 横スクロール（テーブル構造） */}
-          <div className="block md:hidden overflow-x-auto">
-            <table className="min-w-full table-auto">
-              <thead className="bg-gray-200">
-                <tr>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider sticky left-0 bg-gray-200 z-10 border-r border-gray-300">
-                    氏名
-                  </th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
-                    初回体重 (kg)
-                  </th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
-                    現在体重 (kg)
-                  </th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
-                    体重差分 (kg)
-                  </th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
-                    完了予定
-                  </th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
-                    残り日数
-                  </th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
-                    最終更新
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
-                {sortedCustomers.map((customer) => (
-                  <tr key={customer.id} className="hover:bg-gray-50">
-                    <td className="px-4 py-4 whitespace-nowrap sticky left-0 bg-white z-10 border-r border-gray-200">
-                      <Link
-                        href={`/customer/${customer.id}`}
-                        className="text-blue-600 hover:text-blue-800 font-medium text-sm"
-                      >
-                        {customer.name}
-                      </Link>
-                    </td>
-                    <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-900">
-                      {customer.firstWeight?.toFixed(1) || "-"}
-                    </td>
-                    <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-900">
-                      {customer.currentWeight?.toFixed(1) || "-"}
-                    </td>
-                    <td
-                      className={`px-4 py-4 whitespace-nowrap text-sm font-semibold ${
-                        customer.weightDiff && customer.weightDiff > 0
-                          ? "text-red-600"
-                          : "text-gray-900"
-                      }`}
-                    >
-                      {customer.weightDiff !== null
-                        ? `${
-                            customer.weightDiff > 0 ? "+" : ""
-                          }${customer.weightDiff.toFixed(1)}`
-                        : "-"}
-                    </td>
-                    <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-900">
-                      {customer.completion_date
-                        ? new Date(customer.completion_date).toLocaleDateString(
-                            "ja-JP",
-                            {
-                              year: "numeric",
-                              month: "numeric",
-                              day: "numeric",
-                            }
-                          )
-                        : "-"}
-                    </td>
-                    <td
-                      className={`px-4 py-4 whitespace-nowrap text-sm font-semibold ${
-                        customer.daysRemaining !== null &&
-                        customer.daysRemaining < 0 &&
-                        (!customer.weightDiff || customer.weightDiff > 0)
-                          ? "text-red-600"
-                          : "text-gray-900"
-                      }`}
-                    >
-                      {customer.daysRemaining !== null
-                        ? `${customer.daysRemaining > 0 ? "" : ""}${
-                            customer.daysRemaining
-                          }日`
-                        : "-"}
-                    </td>
-                    <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-600">
-                      {customer.lastUpdated
-                        ? new Date(customer.lastUpdated).toLocaleDateString(
-                            "ja-JP",
-                            {
-                              year: "numeric",
-                              month: "numeric",
-                              day: "numeric",
-                            }
-                          )
-                        : "未記録"}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-
-          {/* PC用レイアウト: 通常のテーブル */}
-          <div className="hidden md:block overflow-x-auto">
-            <table className="min-w-full table-auto">
-              <thead className="bg-gray-200">
-                <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    氏名
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    初回体重 (kg)
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    現在体重 (kg)
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    体重差分 (kg)
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    完了予定
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    残り日数
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    最終更新
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
-                {sortedCustomers.map((customer) => (
-                  <tr key={customer.id} className="hover:bg-gray-50">
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <Link
-                        href={`/customer/${customer.id}`}
-                        className="text-blue-600 hover:text-blue-800 font-medium"
-                      >
-                        {customer.name}
-                      </Link>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      {customer.firstWeight?.toFixed(1) || "-"}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      {customer.currentWeight?.toFixed(1) || "-"}
-                    </td>
-                    <td
-                      className={`px-6 py-4 whitespace-nowrap text-sm font-semibold ${
-                        customer.weightDiff && customer.weightDiff > 0
-                          ? "text-red-600"
-                          : "text-gray-900"
-                      }`}
-                    >
-                      {customer.weightDiff !== null
-                        ? `${
-                            customer.weightDiff > 0 ? "+" : ""
-                          }${customer.weightDiff.toFixed(1)}`
-                        : "-"}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      {customer.completion_date
-                        ? new Date(customer.completion_date).toLocaleDateString(
-                            "ja-JP",
-                            {
-                              year: "numeric",
-                              month: "numeric",
-                              day: "numeric",
-                            }
-                          )
-                        : "-"}
-                    </td>
-                    <td
-                      className={`px-6 py-4 whitespace-nowrap text-sm font-semibold ${
-                        customer.daysRemaining !== null &&
-                        customer.daysRemaining < 0 &&
-                        (!customer.weightDiff || customer.weightDiff > 0)
-                          ? "text-red-600"
-                          : "text-gray-900"
-                      }`}
-                    >
-                      {customer.daysRemaining !== null
-                        ? `${customer.daysRemaining > 0 ? "" : ""}${
-                            customer.daysRemaining
-                          }日`
-                        : "-"}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
-                      {customer.lastUpdated
-                        ? new Date(customer.lastUpdated).toLocaleDateString(
-                            "ja-JP",
-                            {
-                              year: "numeric",
-                              month: "numeric",
-                              day: "numeric",
-                            }
-                          )
-                        : "未記録"}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-
-          {customersWithWeightData.length === 0 && (
-            <div className="text-center py-12 text-gray-500">
-              登録された顧客データがありません。
-            </div>
-          )}
-        </div>
-
-        {/* ログアウトボタン */}
-        <div className="text-center mt-8 pb-4">
-          <button
+              <Bot className="mr-2 h-4 w-4" /> AIコーチ
+            </Button>
+          </Link>
+          <Button
+            variant="ghost"
+            size="sm"
             onClick={handleLogout}
-            className="text-sm text-gray-400 hover:text-gray-600 transition duration-300"
+            className="text-slate-400 hover:text-red-400"
           >
-            ログアウト
-          </button>
+            <LogOut className="h-4 w-4" />
+          </Button>
         </div>
       </div>
+
+      <main className="container mx-auto p-4 md:p-6 space-y-8 max-w-7xl animate-fadeIn">
+        {/* Actions Bar */}
+        <div className="flex flex-col md:flex-row justify-between items-end md:items-center gap-4">
+          <div>
+            <h2 className="text-3xl font-bold text-white tracking-tight">
+              顧客リスト
+            </h2>
+            <p className="text-slate-400 mt-1">
+              トレーニング進捗と生体データを管理します。
+            </p>
+          </div>
+          <Link href="/customer">
+            <Button className="shadow-lg shadow-blue-900/20">
+              <UserPlus className="mr-2 h-4 w-4" /> 顧客登録
+            </Button>
+          </Link>
+        </div>
+
+        <Card className="border-slate-800 bg-slate-900/50 backdrop-blur-md overflow-hidden">
+          <div className="p-4 border-b border-slate-800/50 flex flex-col sm:flex-row justify-between items-center gap-4 bg-slate-900/50">
+            <div className="flex items-center gap-2 text-sm text-slate-400">
+              <Users className="h-4 w-4" />
+              <span>
+                総顧客数:{" "}
+                <span className="text-white font-mono">
+                  {customersWithWeightData.length}
+                </span>
+              </span>
+            </div>
+
+            <div className="flex items-center gap-2">
+              <ArrowUpDown className="h-4 w-4 text-slate-500" />
+              <select
+                value={sortOption}
+                onChange={(e) => setSortOption(e.target.value)}
+                className="bg-slate-950 border border-slate-800 text-slate-300 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block p-2"
+              >
+                <option value="">並び替え...</option>
+                <option value="name-asc">氏名 (昇順)</option>
+                <option value="name-desc">氏名 (降順)</option>
+                <option value="date-asc">目標日 (近い順)</option>
+                <option value="date-desc">目標日 (遠い順)</option>
+                <option value="weight-diff-asc">進捗 (良好順)</option>
+                <option value="weight-diff-desc">進捗 (遅れ順)</option>
+              </select>
+            </div>
+          </div>
+
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm text-left text-slate-400">
+              <thead className="text-xs text-slate-300 uppercase bg-slate-950/50 border-b border-slate-800">
+                <tr>
+                  <th
+                    scope="col"
+                    className="px-6 py-4 font-bold tracking-wider whitespace-nowrap"
+                  >
+                    氏名
+                  </th>
+                  <th
+                    scope="col"
+                    className="px-6 py-4 tracking-wider whitespace-nowrap"
+                  >
+                    開始時体重
+                  </th>
+                  <th
+                    scope="col"
+                    className="px-6 py-4 tracking-wider whitespace-nowrap"
+                  >
+                    現在体重
+                  </th>
+                  <th
+                    scope="col"
+                    className="px-6 py-4 tracking-wider whitespace-nowrap"
+                  >
+                    増減
+                  </th>
+                  <th
+                    scope="col"
+                    className="px-6 py-4 tracking-wider whitespace-nowrap"
+                  >
+                    目標日
+                  </th>
+                  <th
+                    scope="col"
+                    className="px-6 py-4 tracking-wider whitespace-nowrap"
+                  >
+                    残日数
+                  </th>
+                  <th
+                    scope="col"
+                    className="px-6 py-4 tracking-wider whitespace-nowrap"
+                  >
+                    最終更新
+                  </th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-800/50">
+                {sortedCustomers.map((customer) => (
+                  <tr
+                    key={customer.id}
+                    className="hover:bg-slate-800/30 transition-colors group"
+                  >
+                    <td className="px-6 py-4 font-medium text-white group-hover:text-blue-400 transition-colors whitespace-nowrap">
+                      <Link
+                        href={`/customer/${customer.id}`}
+                        className="flex items-center gap-2"
+                      >
+                        {customer.name}
+                      </Link>
+                    </td>
+                    <td className="px-6 py-4 font-mono whitespace-nowrap">
+                      {customer.firstWeight?.toFixed(1) || "-"}{" "}
+                      <span className="text-xs text-slate-600">kg</span>
+                    </td>
+                    <td className="px-6 py-4 font-mono text-white whitespace-nowrap">
+                      {customer.currentWeight?.toFixed(1) || "-"}{" "}
+                      <span className="text-xs text-slate-600">kg</span>
+                    </td>
+                    <td className="px-6 py-4 font-mono whitespace-nowrap">
+                      {customer.weightDiff !== null ? (
+                        <span
+                          className={`px-2 py-1 rounded-md text-xs font-bold ${customer.weightDiff > 0 ? "bg-red-500/10 text-red-400" : "bg-green-500/10 text-green-400"}`}
+                        >
+                          {customer.weightDiff > 0 ? "+" : ""}
+                          {customer.weightDiff.toFixed(1)} kg
+                        </span>
+                      ) : (
+                        "-"
+                      )}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      {customer.completion_date
+                        ? new Date(customer.completion_date).toLocaleDateString(
+                            "ja-JP",
+                          )
+                        : "-"}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      {customer.daysRemaining !== null ? (
+                        <span
+                          className={`font-medium ${customer.daysRemaining < 0 ? "text-red-400" : "text-slate-300"}`}
+                        >
+                          {customer.daysRemaining}日
+                        </span>
+                      ) : (
+                        "-"
+                      )}
+                    </td>
+                    <td className="px-6 py-4 text-xs text-slate-500 whitespace-nowrap">
+                      {customer.lastUpdated
+                        ? new Date(customer.lastUpdated).toLocaleDateString(
+                            "ja-JP",
+                          )
+                        : "データなし"}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+            {customersWithWeightData.length === 0 && (
+              <div className="flex flex-col items-center justify-center py-20 text-slate-500">
+                <Users className="h-12 w-12 mb-4 opacity-20" />
+                <p>No clients found in the database.</p>
+              </div>
+            )}
+          </div>
+        </Card>
+      </main>
     </div>
   );
 }

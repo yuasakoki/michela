@@ -1,10 +1,12 @@
 "use client";
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
-import Image from "next/image";
 import { useAuth } from "@/hooks/useAuth";
 import { API_ENDPOINTS } from "@/constants/api";
 import { toast } from "@/utils/toast";
+import { Button } from "@/components/ui/Button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/Card";
+import { Bot, ArrowLeft, Send } from "lucide-react";
 
 interface Message {
   role: "user" | "assistant";
@@ -72,25 +74,40 @@ export default function AiChat() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-100 p-4 md:p-8">
-      <div className="max-w-4xl mx-auto">
-        <div className="flex justify-center mb-4">
-          <Image src="/vercel.svg" alt="logo" width={150} height={150} />
-        </div>
-        <div className="bg-white shadow-lg rounded-lg overflow-hidden">
-          <div className="bg-blue-600 text-white px-6 py-4">
-            <h1 className="text-2xl font-bold">
-              AI相談 - 筋トレ・ダイエット専門家
-            </h1>
-            <p className="text-sm mt-1">
-              最新の科学的根拠に基づいた情報を提供します
-            </p>
+    <div className="min-h-screen bg-slate-950 text-slate-200 p-4 md:p-8">
+      {/* Header */}
+      <div className="max-w-4xl mx-auto mb-6">
+        <div className="flex items-center justify-between mb-6">
+          <div className="flex items-center gap-4">
+            <Link href="/dashboard">
+              <Button variant="ghost" size="icon" className="text-slate-400 hover:text-white bg-slate-900/50 hover:bg-slate-800">
+                <ArrowLeft className="h-5 w-5" />
+              </Button>
+            </Link>
+            <div className="flex items-center gap-3">
+              <div className="h-10 w-10 bg-green-600 rounded-xl flex items-center justify-center shadow-lg shadow-green-600/20">
+                <Bot className="h-6 w-6 text-white" />
+              </div>
+              <div>
+                <h1 className="text-2xl font-bold tracking-tight text-white">AI コーチ</h1>
+                <p className="text-sm text-slate-400">筋トレ・ダイエット専門家</p>
+              </div>
+            </div>
           </div>
+        </div>
+      </div>
 
-          <div className="h-96 md:h-[500px] overflow-y-auto p-6 space-y-4 bg-gray-50">
+      <div className="max-w-4xl mx-auto">
+        <Card className="border-slate-800 bg-slate-900/50 backdrop-blur-md overflow-hidden">
+          <CardHeader className="border-b border-slate-800/50">
+            <CardTitle className="text-slate-200">最新の科学的根拠に基づいた情報を提供します</CardTitle>
+          </CardHeader>
+
+          <div className="h-96 md:h-[500px] overflow-y-auto p-6 space-y-4 bg-slate-950/50">
             {messages.length === 0 && (
-              <div className="text-center text-gray-500 mt-20">
-                <p className="text-lg mb-4">何でも質問してください！</p>
+              <div className="text-center text-slate-500 mt-20">
+                <Bot className="h-16 w-16 mx-auto mb-4 text-green-500/30" />
+                <p className="text-lg mb-4 text-slate-300">何でも質問してください！</p>
                 <div className="text-sm space-y-2">
                   <p>例: 筋肥大に最適なタンパク質摂取量は？</p>
                   <p>例: HIITと有酸素運動の違いは？</p>
@@ -110,7 +127,7 @@ export default function AiChat() {
                   className={`max-w-[80%] rounded-lg px-4 py-3 ${
                     message.role === "user"
                       ? "bg-blue-600 text-white"
-                      : "bg-white border border-gray-200 text-gray-800"
+                      : "bg-slate-800 border border-slate-700 text-slate-200"
                   }`}
                 >
                   <p className="whitespace-pre-wrap text-sm md:text-base">
@@ -122,42 +139,35 @@ export default function AiChat() {
 
             {loading && (
               <div className="flex justify-start">
-                <div className="bg-white border border-gray-200 rounded-lg px-4 py-3">
-                  <p className="text-gray-500">考え中...</p>
+                <div className="bg-slate-800 border border-slate-700 rounded-lg px-4 py-3">
+                  <p className="text-slate-400">考え中...</p>
                 </div>
               </div>
             )}
           </div>
 
-          <div className="border-t border-gray-200 p-4 bg-white">
+          <CardContent className="border-t border-slate-800/50 p-4 bg-slate-900/50">
             <div className="flex gap-2">
               <textarea
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
                 onKeyPress={handleKeyPress}
                 placeholder="質問を入力してください..."
-                className="flex-1 border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
+                className="flex-1 bg-slate-950 border border-slate-700 text-slate-200 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none placeholder:text-slate-500"
                 rows={2}
                 disabled={loading}
               />
-              <button
+              <Button
                 onClick={handleSend}
                 disabled={loading || !input.trim()}
-                className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition duration-300 disabled:bg-gray-400 disabled:cursor-not-allowed"
+                className="px-6 py-2"
               >
+                <Send className="h-4 w-4 mr-2" />
                 送信
-              </button>
+              </Button>
             </div>
-          </div>
-        </div>
-
-        <div className="mt-6 text-center">
-          <Link href="/dashboard">
-            <button className="px-6 py-3 bg-gray-600 text-white rounded-lg shadow-md hover:bg-gray-700 transition duration-300">
-              ダッシュボードに戻る
-            </button>
-          </Link>
-        </div>
+          </CardContent>
+        </Card>
       </div>
     </div>
   );

@@ -1,30 +1,37 @@
-import { NextResponse } from 'next/server';
-import type { NextRequest } from 'next/server';
+import { NextResponse } from "next/server";
+import type { NextRequest } from "next/server";
 
-// 保護されたルート（ログインが必要なページ）
-const protectedRoutes = ['/dashboard', '/customer'];
+const protectedRoutes = ["/dashboard", "/customer"];
+const isDev = process.env.NODE_ENV === "development";
 
 export function middleware(request: NextRequest) {
     const { pathname } = request.nextUrl;
 
-    // 保護されたルートかチェック
+    if (isDev) {
+        console.log("[Middleware] pathname:", pathname);
+    }
+
     const isProtectedRoute = protectedRoutes.some(route =>
         pathname.startsWith(route)
     );
 
-    if (isProtectedRoute) {
-        // クッキーまたはヘッダーから認証トークンを確認
-        const token = request.cookies.get('michela_auth_token');
-
-        if (!token) {
-            // 未ログインの場合、ログインページにリダイレクト
-            return NextResponse.redirect(new URL('/', request.url));
-        }
+    if (!isProtectedRoute) {
+        return NextResponse.next();
     }
 
+    const token = request.cookies.get("michela_auth_token");
+
+    if (!token) {
+        if (isDev) {
+            console.log("[Middleware] NO TOKEN → redirect to /");
+        }
+        return NextResponse.redirect(new URL("/", request.url));
+    }
+
+    // JWTの正当性は Flask 側で保証
     return NextResponse.next();
 }
 
 export const config = {
-    matcher: ['/dashboard/:path*', '/customer/:path*'],
+    matcher: ["/dashboard/:path*", "/customer/:path*"],
 };
