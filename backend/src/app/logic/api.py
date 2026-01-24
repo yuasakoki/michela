@@ -60,15 +60,30 @@ JWT_EXPIRE_DAYS = 1
 IS_PRODUCTION = 'GOOGLE_CREDENTIALS' in os.environ
 
 
+def get_token_from_request():
+    """
+    リクエストからJWTトークンを取得
+    優先順位: 1. Authorization Bearer ヘッダー, 2. Cookie
+    """
+    # 1. Authorization ヘッダーから取得（本番環境向け）
+    auth_header = request.headers.get('Authorization')
+    if auth_header and auth_header.startswith('Bearer '):
+        return auth_header[7:]  # "Bearer " の後ろを取得
+
+    # 2. Cookie から取得（ローカル環境向け）
+    return request.cookies.get('michela_auth_token')
+
+
 def jwt_required(f):
     """
     JWT認証が必要なエンドポイント用デコレータ
     - トークンが無い/無効/期限切れの場合は401を返す
     - 有効な場合はg.current_userにユーザー情報を格納
+    - Authorization: Bearer ヘッダーとCookieの両方をサポート
     """
     @wraps(f)
     def decorated_function(*args, **kwargs):
-        token = request.cookies.get('michela_auth_token')
+        token = get_token_from_request()
 
         if not token:
             return jsonify({"error": "Authentication required", "expired": False}), 401
@@ -135,27 +150,29 @@ def login():
     print(f"JWT created: {token[:50]}...")
 
     # =========================
-    # ③ JWT を Cookie に設定してレスポンス
+    # ③ JWT をレスポンスに含める
     # =========================
-    response = make_response(jsonify({
+    # 本番環境: トークンをレスポンスボディで返す（Bearer Token方式）
+    # ローカル環境: Cookie も設定（開発時の利便性のため）
+    response_data = {
         "message": "Login successful",
-        "user": user_data
-    }), 200)
+        "user": user_data,
+        "token": token  # フロントエンドがlocalStorageに保存
+    }
+    response = make_response(jsonify(response_data), 200)
 
-    # Cookie設定（環境に応じて切り替え）
-    cookie_secure = IS_PRODUCTION
-    cookie_samesite = 'None' if IS_PRODUCTION else 'Lax'
-    print(f"Cookie settings: secure={cookie_secure}, samesite={cookie_samesite}")
-
-    response.set_cookie(
-        'michela_auth_token',
-        token,
-        httponly=True,
-        secure=cookie_secure,
-        samesite=cookie_samesite,
-        max_age=JWT_EXPIRE_DAYS * 24 * 60 * 60,
-        path='/'
-    )
+    # ローカル環境ではCookieも設定（開発時の利便性のため）
+    if not IS_PRODUCTION:
+        response.set_cookie(
+            'michela_auth_token',
+            token,
+            httponly=True,
+            secure=False,
+            samesite='Lax',
+            max_age=JWT_EXPIRE_DAYS * 24 * 60 * 60,
+            path='/'
+        )
+        print("Cookie set for local development")
 
     print("========== LOGIN END (SUCCESS) ==========")
     return response
@@ -190,9 +207,10 @@ def verify_token():
     """
     トークン検証エンドポイント
     - フロントエンドがトークンの有効性を確認するために使用
+    - Authorization: Bearer ヘッダーとCookieの両方をサポート
     - 期限切れの場合は401を返す
     """
-    token = request.cookies.get('michela_auth_token')
+    token = get_token_from_request()
 
     if not token:
         return jsonify({"error": "No token provided", "valid": False}), 401
@@ -206,23 +224,11 @@ def verify_token():
             "exp": payload.get("exp")
         }), 200
     except jwt.ExpiredSignatureError:
-        # トークン期限切れ
-        response = make_response(jsonify({
+        return jsonify({
             "error": "Token expired",
             "valid": False,
             "expired": True
-        }), 401)
-        # 期限切れのCookieを削除
-        response.set_cookie(
-            'michela_auth_token',
-            '',
-            httponly=True,
-            secure=IS_PRODUCTION,
-            samesite='None' if IS_PRODUCTION else 'Lax',
-            max_age=0,
-            path='/'
-        )
-        return response
+        }), 401
     except jwt.InvalidTokenError:
         return jsonify({"error": "Invalid token", "valid": False}), 401
 

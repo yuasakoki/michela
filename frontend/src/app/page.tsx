@@ -3,6 +3,7 @@ import React, { useEffect, useState } from "react";
 import { useLogin } from "../hooks/useLogin";
 import { useRouter } from "next/navigation";
 import { API_ENDPOINTS } from "@/constants/api";
+import { getAuthToken } from "@/services/authService";
 import {
   Card,
   CardContent,
@@ -23,23 +24,34 @@ export default function Home() {
     console.log("useEffect fired");
     document.title = "MII Fit | Trainer Portal";
 
-    // バックエンドでCookieを検証してログイン済みか確認
+    // localStorageのトークンを検証してログイン済みか確認
     const checkAuth = async () => {
+      const token = getAuthToken();
+
+      // トークンがない場合はログイン画面を表示
+      if (!token) {
+        console.log("[Auth] No token found → show login form");
+        setIsCheckingAuth(false);
+        return;
+      }
+
       console.log("[Auth] Checking token with backend...");
       try {
         const response = await fetch(API_ENDPOINTS.VERIFY_TOKEN, {
           method: "GET",
-          credentials: "include",
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
         });
 
         console.log("[Auth] verify_token response:", response.status);
 
         if (response.ok) {
-          // Cookieが有効 → ダッシュボードへ
+          // トークンが有効 → ダッシュボードへ
           console.log("[Auth] Token valid → redirect to /dashboard");
           router.replace("/dashboard");
         } else {
-          // Cookieが無効 → ログイン画面を表示（401は正常な動作）
+          // トークンが無効 → ログイン画面を表示
           console.log("[Auth] Token invalid (401) → show login form");
           setIsCheckingAuth(false);
         }

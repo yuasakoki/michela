@@ -3,7 +3,7 @@ import React, { useState, useEffect } from "react";
 import Link from "next/link";
 // import { useAuth } from "@/hooks/useAuth";
 import { useRole } from "@/hooks/useRole";
-import { logoutApi } from "@/services/authService";
+import { logoutApi, authFetch } from "@/services/authService";
 import { useRouter } from "next/navigation";
 import { API_ENDPOINTS } from "@/constants/api";
 import { Button } from "@/components/ui/Button";
@@ -72,13 +72,13 @@ export default function Dashboard() {
   useEffect(() => {
     const fetchCustomers = async () => {
       try {
-        const response = await fetch(API_ENDPOINTS.CUSTOMERS);
+        const response = await authFetch(API_ENDPOINTS.CUSTOMERS);
         if (response.ok) {
           const data = await response.json();
           const customersWithData = await Promise.all(
             data.map(async (customer: Customer) => {
               try {
-                const weightResponse = await fetch(
+                const weightResponse = await authFetch(
                   API_ENDPOINTS.WEIGHT_HISTORY(customer.id, 1000),
                 );
                 let weightHistory: WeightRecord[] = [];
