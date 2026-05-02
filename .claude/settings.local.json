@@ -1,0 +1,7 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(wc -l c:/work/michela/backend/src/app/services/*.py)"
+    ]
+  }
+}

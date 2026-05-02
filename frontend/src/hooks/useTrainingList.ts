@@ -1,33 +1,19 @@
 "use client";
 import { useState, useEffect, useCallback } from "react";
-import { API_ENDPOINTS } from "@/constants/api";
 import { toast, TOAST_DURATION } from "@/utils/toast";
 import { SUCCESS_MESSAGES, ERROR_MESSAGES } from "@/constants/messages";
+import { fetchCustomerApi, type Customer } from "@/services/customerService";
+import {
+  fetchTrainingSessionsApi,
+  deleteTrainingSessionApi,
+  fetchTrainingAdviceApi,
+  type Exercise,
+  type TrainingSession,
+} from "@/services/trainingService";
 
-// Types
-export interface Exercise {
-  exercise_id: string;
-  exercise_name: string;
-  sets: {
-    reps: number;
-    weight: number;
-  }[];
-  notes?: string;
-}
-
-export interface TrainingSession {
-  id: string;
-  customer_id: string;
-  date: string;
-  exercises: Exercise[];
-  notes: string;
-  duration_minutes: number;
-}
-
-export interface Customer {
-  id: string;
-  name: string;
-}
+// Re-export types for consumers
+export type { Customer } from "@/services/customerService";
+export type { Exercise, TrainingSession } from "@/services/trainingService";
 
 export interface GroupedExercise {
   exercise_id: string;
@@ -109,29 +95,17 @@ export function useTrainingList(customerId: string): UseTrainingListReturn {
 
   // Fetch customer data
   const fetchCustomer = useCallback(async () => {
-    try {
-      const response = await fetch(API_ENDPOINTS.CUSTOMER(customerId));
-      if (response.ok) {
-        const data = await response.json();
-        setCustomer(data);
-      }
-    } catch (error) {
-      console.error("Error fetching customer:", error);
+    const data = await fetchCustomerApi(customerId);
+    if (data) {
+      setCustomer(data);
     }
   }, [customerId]);
 
   // Fetch training sessions
   const fetchSessions = useCallback(async () => {
     try {
-      const response = await fetch(
-        API_ENDPOINTS.TRAINING_SESSIONS(customerId, 20)
-      );
-      if (response.ok) {
-        const data = await response.json();
-        setSessions(data);
-      }
-    } catch (error) {
-      console.error("Error fetching training sessions:", error);
+      const data = await fetchTrainingSessionsApi(customerId, 20);
+      setSessions(data);
     } finally {
       setLoading(false);
     }
@@ -172,23 +146,15 @@ export function useTrainingList(customerId: string): UseTrainingListReturn {
   // Delete a session
   const handleDelete = useCallback(
     async (sessionId: string) => {
-      try {
-        const response = await fetch(
-          API_ENDPOINTS.DELETE_TRAINING_SESSION(sessionId),
-          { method: "DELETE" }
-        );
-        if (response.ok) {
-          toast.success(SUCCESS_MESSAGES.DELETED());
-          setDeleteId(null);
-          setDeleteSessionIds([]);
-          setSelectedDeleteSessionId(null);
-          fetchSessions();
-        } else {
-          toast.error(ERROR_MESSAGES.DELETION_FAILED());
-        }
-      } catch (err) {
-        toast.error("ネットワークエラーが発生しました");
-        console.error("Error deleting session:", err);
+      const success = await deleteTrainingSessionApi(sessionId);
+      if (success) {
+        toast.success(SUCCESS_MESSAGES.DELETED());
+        setDeleteId(null);
+        setDeleteSessionIds([]);
+        setSelectedDeleteSessionId(null);
+        fetchSessions();
+      } else {
+        toast.error(ERROR_MESSAGES.DELETION_FAILED());
       }
     },
     [fetchSessions]
@@ -223,23 +189,16 @@ export function useTrainingList(customerId: string): UseTrainingListReturn {
     setAiAdvice("");
     setCachedUntil(null);
     try {
-      const response = await fetch(API_ENDPOINTS.TRAINING_ADVICE(customerId));
-      if (response.ok) {
-        const data = await response.json();
+      const data = await fetchTrainingAdviceApi(customerId);
+      if (data) {
         setAiAdvice(data.advice);
         if (data.is_cached && data.cached_until) {
           setCachedUntil(data.cached_until);
         }
-      } else {
-        const error = await response.json();
-        toast.error(
-          `アドバイス取得に失敗: ${error.error}`,
-          TOAST_DURATION.LONG
-        );
       }
     } catch (err) {
-      toast.error("ネットワークエラーが発生しました");
-      console.error("Error fetching advice:", err);
+      const errorMessage = err instanceof Error ? err.message : "ネットワークエラーが発生しました";
+      toast.error(`アドバイス取得に失敗: ${errorMessage}`, TOAST_DURATION.LONG);
     } finally {
       setLoadingAdvice(false);
     }
