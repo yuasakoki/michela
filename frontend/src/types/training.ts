@@ -1,11 +1,34 @@
 // トレーニング関連の型定義
 
 /**
- * トレーニングセット
+ * トレーニングセット（旧構造・既存データ用）
  */
 export interface Set {
-    reps: number;      // 回数
-    weight: number;    // 重量（kg）0の場合は自重
+    reps: number;
+    weight: number;
+}
+
+/**
+ * トレーニングセット（新構造）
+ */
+export interface ExerciseSetV2 {
+    set_number: number;
+    set_type: 'warmup' | 'working';
+    weight_kg: number;
+    reps_planned: number;
+    reps_actual: number;
+    rir_target: number | null;
+}
+
+/**
+ * 推奨セットレスポンス
+ */
+export interface RecommendSetsResponse {
+    recommended_sets: ExerciseSetV2[];
+    actual_max_kg: number;
+    is_first_session: boolean;
+    previous_working_weight_kg: number | null;
+    weight_changed: boolean;
 }
 
 /**

@@ -1,9 +1,19 @@
 import { API_ENDPOINTS } from '@/constants/api';
 import { authFetch } from './authService';
+import type { RecommendSetsResponse } from '@/types/training';
+export type { ExerciseSetV2 } from '@/types/training';
 
 export interface ExerciseSet {
-    reps: number;
-    weight: number;
+    // 旧フォーマット
+    reps?: number;
+    weight?: number;
+    // 新フォーマット (V2)
+    weight_kg?: number;
+    reps_actual?: number;
+    set_number?: number;
+    set_type?: 'warmup' | 'working';
+    reps_planned?: number;
+    rir_target?: number | null;
 }
 
 export interface Exercise {
@@ -59,6 +69,48 @@ export const deleteTrainingSessionApi = async (sessionId: string): Promise<boole
     } catch (error) {
         console.error('Error deleting training session:', error);
         return false;
+    }
+};
+
+/**
+ * 推奨セットを生成
+ */
+export const fetchRecommendedSetsApi = async (
+    customerId: string,
+    exerciseId: string
+): Promise<RecommendSetsResponse | null> => {
+    try {
+        const response = await authFetch(API_ENDPOINTS.RECOMMEND_SETS, {
+            method: 'POST',
+            body: JSON.stringify({ customer_id: customerId, exercise_id: exerciseId }),
+        });
+        if (response.ok) {
+            return await response.json();
+        }
+        return null;
+    } catch (error) {
+        console.error('Error fetching recommended sets:', error);
+        return null;
+    }
+};
+
+/**
+ * 特定種目の過去最高重量を取得
+ */
+export const fetchMaxWeightApi = async (
+    customerId: string,
+    exerciseId: string
+): Promise<number | null> => {
+    try {
+        const response = await authFetch(API_ENDPOINTS.MAX_WEIGHT(customerId, exerciseId));
+        if (response.ok) {
+            const data = await response.json();
+            return data.max_weight;
+        }
+        return null;
+    } catch (error) {
+        console.error('Error fetching max weight:', error);
+        return null;
     }
 };
 

@@ -40,7 +40,11 @@ export function groupExercisesByName(
           sessionIds: [],
         };
       }
-      grouped[exercise.exercise_name].sets.push(...exercise.sets);
+      const normalizedSets = exercise.sets.map((set) => ({
+        reps: set.reps_actual ?? set.reps ?? 0,
+        weight: set.weight_kg ?? set.weight ?? 0,
+      }));
+      grouped[exercise.exercise_name].sets.push(...normalizedSets);
       if (exercise.notes && exercise.notes.trim()) {
         grouped[exercise.exercise_name].notes.push(exercise.notes);
       }
@@ -120,10 +124,11 @@ export function useTrainingList(customerId: string): UseTrainingListReturn {
 
   // Calculate total volume for an exercise
   const getTotalVolume = useCallback((exercise: Exercise): number => {
-    return exercise.sets.reduce(
-      (total, set) => total + set.reps * set.weight,
-      0
-    );
+    return exercise.sets.reduce((total, set) => {
+      const reps = set.reps_actual ?? set.reps ?? 0;
+      const weight = set.weight_kg ?? set.weight ?? 0;
+      return total + reps * weight;
+    }, 0);
   }, []);
 
   // Group sessions by date

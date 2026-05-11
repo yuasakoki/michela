@@ -41,6 +41,8 @@ export const API_ENDPOINTS = {
     UPDATE_TRAINING_SESSION: (id: string) => `${API_BASE_URL}/update_training_session/${id}`,
     DELETE_TRAINING_SESSION: (id: string) => `${API_BASE_URL}/delete_training_session/${id}`,
     TRAINING_ADVICE: (customerId: string) => `${API_BASE_URL}/get_training_advice/${customerId}`,
+    MAX_WEIGHT: (customerId: string, exerciseId: string) => `${API_BASE_URL}/get_max_weight/${customerId}/${exerciseId}`,
+    RECOMMEND_SETS: `${API_BASE_URL}/api/training/recommend-sets`,
 
     // 食事記録
     FOOD_PRESETS: `${API_BASE_URL}/get_food_presets`,

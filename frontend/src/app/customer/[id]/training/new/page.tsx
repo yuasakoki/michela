@@ -5,6 +5,11 @@ import { useParams, useRouter } from "next/navigation";
 import { useAuth } from "@/hooks/useAuth";
 import { toast, TOAST_DURATION } from "@/utils/toast";
 import { API_ENDPOINTS, COMMON_ERROR_MESSAGES } from "@/constants/api";
+import {
+  fetchMaxWeightApi,
+  fetchRecommendedSetsApi,
+} from "@/services/trainingService";
+import { authFetch } from "@/services/authService";
 import { ROUTES } from "@/constants/routes";
 import {
   SUCCESS_MESSAGES,
@@ -32,8 +37,12 @@ interface ExercisePreset {
 }
 
 interface ExerciseSet {
-  reps: number;
-  weight: number;
+  set_number: number;
+  set_type: "warmup" | "working";
+  weight_kg: number;
+  reps_planned: number;
+  reps_actual: number;
+  rir_target: number | null;
 }
 
 interface Exercise {
@@ -41,6 +50,7 @@ interface Exercise {
   exercise_name: string;
   sets: ExerciseSet[];
   notes?: string;
+  max_weight_kg?: number | null;
 }
 
 interface Customer {
@@ -67,6 +77,9 @@ export default function NewTrainingSession() {
   const [newExerciseName, setNewExerciseName] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("");
   const [newExerciseCategory, setNewExerciseCategory] = useState("");
+  const [maxWeight, setMaxWeight] = useState<number | null>(null);
+  const [generatingRecommendationFor, setGeneratingRecommendationFor] =
+    useState<number | null>(null);
 
   const categories = [
     { id: "chest", name: "胸" },
@@ -95,6 +108,16 @@ export default function NewTrainingSession() {
   const filteredExercises = selectedCategory
     ? exercisePresets.filter((preset) => preset.category === selectedCategory)
     : [];
+
+  useEffect(() => {
+    if (!selectedExercise) {
+      setMaxWeight(null);
+      return;
+    }
+    fetchMaxWeightApi(customerId, selectedExercise).then((w) => {
+      setMaxWeight(w);
+    });
+  }, [selectedExercise, customerId]);
 
   useEffect(() => {
     if (exercises.length > 0 || notes.trim() !== "") {
@@ -166,24 +189,39 @@ export default function NewTrainingSession() {
     const preset = exercisePresets.find((p) => p.id === selectedExercise);
     if (!preset) return;
 
-    const defaultWeight = calculateDefaultWeight();
+    const sets: ExerciseSet[] = [
+      {
+        set_number: 1,
+        set_type: "working",
+        weight_kg: maxWeight ?? calculateDefaultWeight(),
+        reps_planned: 10,
+        reps_actual: 10,
+        rir_target: null,
+      },
+    ];
 
     setExercises([
       ...exercises,
       {
         exercise_id: preset.id,
         exercise_name: preset.name,
-        sets: [{ reps: 10, weight: defaultWeight }],
+        sets,
         notes: "",
+        max_weight_kg: maxWeight,
       },
     ]);
     setSelectedExercise("");
+    setMaxWeight(null);
   };
 
   const addSet = (exerciseIndex: number) => {
     const newExercises = [...exercises];
-    const firstSet = newExercises[exerciseIndex].sets[0];
-    newExercises[exerciseIndex].sets.push({ ...firstSet });
+    const sets = newExercises[exerciseIndex].sets;
+    const lastSet = sets[sets.length - 1];
+    newExercises[exerciseIndex].sets.push({
+      ...lastSet,
+      set_number: sets.length + 1,
+    });
     setExercises(newExercises);
   };
 
@@ -199,12 +237,30 @@ export default function NewTrainingSession() {
   const updateSet = (
     exerciseIndex: number,
     setIndex: number,
-    field: "reps" | "weight",
+    field: "reps_actual" | "weight_kg",
     value: number,
   ) => {
     const newExercises = [...exercises];
     newExercises[exerciseIndex].sets[setIndex][field] = value;
     setExercises(newExercises);
+  };
+
+  const handleGenerateRecommendationForExercise = async (
+    exerciseIndex: number,
+  ) => {
+    const exercise = exercises[exerciseIndex];
+    setGeneratingRecommendationFor(exerciseIndex);
+    const data = await fetchRecommendedSetsApi(
+      customerId,
+      exercise.exercise_id,
+    );
+    if (data) {
+      const newExercises = [...exercises];
+      newExercises[exerciseIndex].sets = data.recommended_sets;
+      newExercises[exerciseIndex].max_weight_kg = data.actual_max_kg;
+      setExercises(newExercises);
+    }
+    setGeneratingRecommendationFor(null);
   };
 
   const removeExercise = (exerciseIndex: number) => {
@@ -316,9 +372,8 @@ export default function NewTrainingSession() {
     document.body.appendChild(loadingAlert);
 
     try {
-      const response = await fetch(API_ENDPOINTS.ADD_TRAINING_SESSION, {
+      const response = await authFetch(API_ENDPOINTS.ADD_TRAINING_SESSION, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           customer_id: customerId,
           date,
@@ -476,9 +531,31 @@ export default function NewTrainingSession() {
           >
             <CardContent>
               <div className="flex justify-between items-center mb-4">
-                <h3 className="text-xl font-bold text-white">
-                  {exercise.exercise_name}
-                </h3>
+                <div>
+                  <h3 className="text-xl font-bold text-white">
+                    {exercise.exercise_name}
+                  </h3>
+                  {exercise.max_weight_kg != null && (
+                    <div className="flex items-center gap-3 mt-0.5">
+                      <p className="text-xs text-slate-400">
+                        過去最高重量: {exercise.max_weight_kg}kg
+                      </p>
+                      <Button
+                        onClick={() =>
+                          handleGenerateRecommendationForExercise(exerciseIdx)
+                        }
+                        disabled={generatingRecommendationFor === exerciseIdx}
+                        variant="secondary"
+                        size="sm"
+                        className="bg-slate-700 hover:bg-slate-600 text-xs h-6 px-2"
+                      >
+                        {generatingRecommendationFor === exerciseIdx
+                          ? "生成中..."
+                          : "推奨セット生成"}
+                      </Button>
+                    </div>
+                  )}
+                </div>
                 <button
                   onClick={() => removeExercise(exerciseIdx)}
                   className="text-red-400 hover:text-red-300 text-sm flex items-center gap-1"
@@ -498,12 +575,12 @@ export default function NewTrainingSession() {
                       セット{setIdx + 1}
                     </span>
                     <select
-                      value={set.reps}
+                      value={set.reps_actual}
                       onChange={(e) =>
                         updateSet(
                           exerciseIdx,
                           setIdx,
-                          "reps",
+                          "reps_actual",
                           Number.parseInt(e.target.value),
                         )
                       }
@@ -518,12 +595,12 @@ export default function NewTrainingSession() {
                       )}
                     </select>
                     <select
-                      value={set.weight}
+                      value={set.weight_kg}
                       onChange={(e) =>
                         updateSet(
                           exerciseIdx,
                           setIdx,
-                          "weight",
+                          "weight_kg",
                           Number.parseFloat(e.target.value),
                         )
                       }
@@ -547,12 +624,14 @@ export default function NewTrainingSession() {
                 ))}
               </div>
 
-              <button
+              <Button
                 onClick={() => addSet(exerciseIdx)}
-                className="mt-3 px-4 py-2 bg-slate-800 text-slate-300 rounded-lg hover:bg-slate-700 text-sm border border-slate-700"
+                variant="secondary"
+                className="mt-3 bg-slate-800 hover:bg-slate-700 border border-slate-600"
               >
-                + セット追加
-              </button>
+                <Plus className="h-4 w-4 mr-1" />
+                セット追加
+              </Button>
 
               <div className="mt-4">
                 <label className="block text-sm font-medium text-slate-300 mb-1">
@@ -592,7 +671,8 @@ export default function NewTrainingSession() {
         <div className="flex gap-3">
           <Button
             onClick={handleSubmit}
-            className="bg-green-600 hover:bg-green-500"
+            disabled={exercises.length === 0}
+            className="bg-green-600 hover:bg-green-500 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             <Save className="h-4 w-4 mr-2" />
             登録

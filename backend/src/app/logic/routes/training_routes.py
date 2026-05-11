@@ -112,3 +112,25 @@ def get_exercise_history(customer_id, exercise_id):
         return jsonify(history), 200
     except Exception as e:
         return jsonify({'error': str(e)}), 500
+
+
+@training_bp.route('/api/training/recommend-sets', methods=['POST'])
+def recommend_sets():
+    """推奨セットを生成"""
+    data = request.json
+    if not data or 'customer_id' not in data or 'exercise_id' not in data:
+        return jsonify({'error': 'customer_id and exercise_id are required'}), 400
+
+    result, error = training_service.generate_recommended_sets(data['customer_id'], data['exercise_id'])
+    if error:
+        return jsonify({'error': error}), 500
+    return jsonify(result), 200
+
+
+@training_bp.route('/get_max_weight/<customer_id>/<exercise_id>', methods=['GET'])
+def get_max_weight(customer_id, exercise_id):
+    """特定種目の過去最高重量を取得"""
+    max_weight, error = training_service.get_max_weight(customer_id, exercise_id)
+    if error:
+        return jsonify({'error': error}), 500
+    return jsonify({'max_weight': max_weight}), 200
