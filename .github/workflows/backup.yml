@@ -7,7 +7,7 @@ on:
   # Run daily at 2:00 AM UTC
   schedule:
     - cron: '0 2 * * *'
-  
+
   # Allow manual trigger
   workflow_dispatch:
     inputs:
@@ -23,47 +23,48 @@ on:
 jobs:
   backup:
     runs-on: ubuntu-latest
-    
+
     permissions:
       contents: read
       issues: write
-    
+
+    env:
+      BACKUP_ENVIRONMENT: ${{ inputs.environment || 'production' }}
+      GOOGLE_CREDENTIALS: ${{ secrets[format('GOOGLE_CREDENTIALS_{0}', inputs.environment == 'staging' && 'STAGING' || 'PRODUCTION')] }}
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
-      
+
       - name: Set up Python
         uses: actions/setup-python@v4
         with:
           python-version: '3.11'
-      
+
       - name: Install dependencies
         run: |
           cd backend
           pip install -r requirements.txt
-      
+
       - name: Run backup script
-        env:
-          GOOGLE_CREDENTIALS: ${{ secrets.GOOGLE_CREDENTIALS_PRODUCTION }}
-          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
         run: |
           cd backend
-          python scripts/backup_firestore.py --environment ${{ github.event.inputs.environment || 'production' }}
-      
+          python scripts/backup_firestore.py --environment "$BACKUP_ENVIRONMENT"
+
       - name: Upload backup artifacts
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
-          name: firestore-backup-${{ github.event.inputs.environment || 'production' }}-${{ github.run_number }}
+          name: firestore-backup-${{ env.BACKUP_ENVIRONMENT }}-${{ github.run_number }}
           path: backend/scripts/backups/
           retention-days: 30
-      
+
       - name: Create backup summary
         run: |
           echo "### Backup Summary" >> $GITHUB_STEP_SUMMARY
-          echo "- **Environment**: ${{ github.event.inputs.environment || 'production' }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Environment**: $BACKUP_ENVIRONMENT" >> $GITHUB_STEP_SUMMARY
           echo "- **Date**: $(date)" >> $GITHUB_STEP_SUMMARY
           echo "- **Status**: ✅ Completed" >> $GITHUB_STEP_SUMMARY
-          
+
           # Show backup metadata if available
           METADATA_FILE=$(find backend/scripts/backups -name "backup_metadata.json" -type f | head -1)
           if [ -f "$METADATA_FILE" ]; then
@@ -71,7 +72,7 @@ jobs:
             echo "#### Backup Details" >> $GITHUB_STEP_SUMMARY
             cat "$METADATA_FILE" >> $GITHUB_STEP_SUMMARY
           fi
-      
+
       - name: Notify on failure
         if: failure()
         uses: actions/github-script@v6
@@ -81,6 +82,6 @@ jobs:
               owner: context.repo.owner,
               repo: context.repo.repo,
               title: '🚨 Firestore Backup Failed',
-              body: `The automated Firestore backup failed.\n\n**Environment**: ${{ github.event.inputs.environment || 'production' }}\n**Workflow Run**: ${context.runId}\n**Date**: ${new Date().toISOString()}\n\nPlease check the workflow logs for details.`,
+              body: `The automated Firestore backup failed.\n\n**Environment**: ${{ env.BACKUP_ENVIRONMENT }}\n**Workflow Run**: ${context.runId}\n**Date**: ${new Date().toISOString()}\n\nPlease check the workflow logs for details.`,
               labels: ['backup', 'critical']
             })
